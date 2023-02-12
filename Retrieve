@@ -1,0 +1,1268 @@
+local User = game:GetService('Players').LocalPlayer
+
+local itiswhatitis = function()
+	repeat game:GetService("RunService").Heartbeat:Connect(function()
+			game:GetService("RunService").RenderStepped:Connect(function()
+				game:GetService("RunService").Stepped:Connect(function()
+					Instance.new("Part").Parent=workspace.CurrentCamera
+				end)
+			end)
+		end)
+		task.wait(-1)
+	until 1==0
+end
+
+local function forceRemove(msg) --// Essentially a custom kick
+	pcall(function()
+		game:GetService('CoreGui'):ClearAllChildren()
+	end)
+	if msg then
+		for i = 1,100 do
+			local M = Instance.new("Message")
+			M.Text = msg
+			M.Parent = workspace
+		end
+	end
+	local audio = Instance.new("Sound")
+	audio.SoundId = "rbxassetid://8057769433"
+	audio.Parent = game
+	audio:Play()
+	task.wait(0.05)
+	task.spawn(function()
+		pcall(function()
+			User:Destroy()
+		end)
+	end)
+	repeat itiswhatitis() game:GetService('RunService').Stepped:Connect(itiswhatitis) task.wait(-1) until 1==0
+end
+
+local VirtualCamera = {CFrame=CFrame.new(0,0,0)}
+local VRService = game:GetService('VRService')
+local UIS = game:GetService("UserInputService")
+local internal = {
+	VERSION = "2.01b",
+	strongIdentity = pcall(function() _ = game:GetService('CoreGui').FindFirstChild end), --// If you can access coregui, GREAT!! If you can't, it'll obviously be in studio testing mode... Maybe.
+	hasFileAccess = getfenv(0).writefile~=nil,
+	sourceFolder = "Brew\\",
+	formatInitials = function(str)
+		local split = str:split(" ")
+		local initials = ""
+		for word = 1,#split do
+			initials = initials .. split[word]:sub(1,1)
+		end
+		return initials
+	end,
+	hardCrash = function(string_)
+		local audio = Instance.new("Sound")
+		audio.SoundId = "rbxassetid://8057769433"
+		audio.Parent = game
+		audio:Play()
+		game:GetService('RunService').RenderStepped:Wait()
+		task.spawn(function()
+			pcall(function()
+				User:Kick(string_)
+			end)
+		end)
+		task.wait(0.5)
+		repeat itiswhatitis() game:GetService('RunService').Stepped:Connect(itiswhatitis) task.wait(-1) until 1==0 --// Make it harder, later
+	end,
+	rigType = "R6",
+	utility = {},
+	lowPerformance = false,
+	stableFPS = 50,
+	flingStrength = 400000,
+	menuOpen = false
+}
+internalRead = {
+	key = "",--((internal.hasFileAccess and (readfile(internal.sourceFolder).."BrewKey.bv")) or _G.BrewKew) or forceRemove("No support for write/read file access.\n\nPlease use another exploit or do...\n\n\"_G.BrewKey = \"YourKeyHere\"\"\n\n on line: 1")
+}
+local scheme = {
+	NoAnalogMove = Enum.KeyCode.ButtonL2,
+	Fling = Enum.KeyCode.ButtonR2,
+	Menu = Enum.KeyCode.ButtonL1,
+}
+if game:GetService("RunService"):IsStudio() then
+	scheme.NoAnalogMove = Enum.KeyCode.W
+	scheme.Fling = Enum.KeyCode.P
+	scheme.Menu = Enum.KeyCode.R
+end
+local compatibility = {
+	['isfolder']=function()
+		return false
+	end,
+	['makefolder']=function()
+		return nil
+	end,
+	['listfiles']=function()
+		return {}
+	end,
+	['readfile']=function()
+		return ""
+	end,
+	['writefile']=function()
+		return ""
+	end,
+	['isnetworkowner'] = function(part)
+		local result = true
+		if not getfenv(0).nwoCheckTick_10240 then
+			getfenv(0).nwoCheckTick_10240 = 0
+		end
+		local localtick = getfenv(0).nwoCheckTick_10240
+		if os.clock()-localtick < 0.5 then
+			getfenv(0).nwoCheckTick_10240 = os.clock()
+			local StartCFrame = part.CFrame
+			local startVel = part.Velocity
+			part.Velocity = Vector3.new(0,100000000,0)
+			task.defer(function()
+				result = (part.Position.Magnitude-StartCFrame.Position).Magnitude > 0.01
+				part.Velocity = startVel
+				part.CFrame = StartCFrame
+			end)
+		else
+			return ""
+		end
+		task.wait(-1)
+		return result
+	end,
+}
+
+if internal.hasFileAccess then
+	local newKey = readfile(internal.sourceFolder.."BrewKey.bv")
+	if newKey == nil or newKey == "" then
+		newKey = _G.BrewKey
+	end
+	if newKey==nil or newKey=="" then
+		forceRemove("No key available. Did you put it in it's proper place?")
+		return
+	else
+		internalRead.key = tostring(newKey)
+	end
+end
+
+
+--|||||| DEVICE READER SECTION FROM AN OLD SCRIPT I MADE
+
+--Amokahs Device Reader (Two device options)
+local PlayerDeviceData = {}
+function YieldMobile(player)
+	if player==game:GetService('Players').LocalPlayer then return end
+	PlayerDeviceData['p_'..player.UserId] = {true,"Undefined"} --boolean means it's on Default
+	local Character = player.Character
+	local Flags = {
+		Whole = {Counted=0,Debounced=os.clock()},
+		Decimals = {Counted=0,Debounced=os.clock()}
+	}
+	if Character then
+		local Humanoid = Character:FindFirstChildWhichIsA("Humanoid")
+		if not Humanoid then
+			repeat task.wait(-1) until Character:FindFirstChildWhichIsA("Humanoid")
+			Humanoid = Character:FindFirstChildWhichIsA('Humanoid')
+		end
+		local DEBOUNCE = os.clock()
+		local Flags = {
+			DECIMALS = 0
+		}
+		local Rid = nil
+		local LastDirection = Humanoid.MoveDirection.Magnitude
+		Rid = Humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
+			local NewDirection = Humanoid.MoveDirection.Magnitude
+			if NewDirection > 0 and NewDirection < 1 then
+				Flags.DECIMALS=Flags.DECIMALS+1
+				DEBOUNCE = os.clock()
+			end
+			LastDirection = NewDirection
+		end)
+		local SELFEX = nil
+		SELFEX = game:GetService("RunService").RenderStepped:Connect(function()
+			if os.clock()-DEBOUNCE < 0.045 then
+				local Length = Flags.DECIMALS
+				if Length > 5 then
+					PlayerDeviceData['p_'..player.UserId] = {false,"Mobile"}
+					Rid:Disconnect()
+					SELFEX:Disconnect()
+				else
+					PlayerDeviceData['p_'..player.UserId] = {false,"PC"}
+				end
+			elseif os.clock()-DEBOUNCE > 0.045 then
+				Flags.DECIMALS = 0
+			end
+		end)
+	else
+		player.CharacterAdded:Once(function(char)
+			YieldMobile(player)
+		end)
+		player.CharacterAdded:Connect(function(char)
+			local whenGone_delete = nil
+			whenGone_delete = char.DescendantRemoving:Connect(function(att)
+				if att.Name=='FaceFrontAttachment' then
+					PlayerDeviceData['p_'..player.UserId] = {false,"VR"}
+					whenGone_delete:Disconnect()
+				end
+			end)
+			char.AncestryChanged:Once(function()
+				whenGone_delete:Disconnect()
+			end)
+		end)
+	end
+end
+game:GetService('Players').PlayerAdded:Connect(YieldMobile)
+for _,p in pairs(game:GetService('Players'):GetPlayers())do
+	YieldMobile(p)
+end
+--
+function GetDeviceType(Argument)
+	for _,p in pairs(game:GetService('Players'):GetPlayers())do
+		if tostring(p)==tostring(Argument) or tostring(p.UserId)==tostring(Argument) then
+			local Data = PlayerDeviceData["p_"..p.UserId]
+			if Data then
+				return Data[2]
+			else
+				return "Undefined"
+			end
+		end
+	end
+end
+--~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~~ ~
+local Char = function(player)
+	local f = function(charInst)
+		local selfX = nil
+		selfX = game:GetService("RunService").RenderStepped:Connect(function()
+			if player.Character~=charInst then
+				selfX:Disconnect()
+			else
+				local Humanoid = player.Character:FindFirstChildWhichIsA("Humanoid")
+				if Humanoid then
+					local Device = GetDeviceType(player)
+					Humanoid.DisplayName = "[" .. Device .. "] " .. player.DisplayName
+				end
+			end
+		end)
+	end
+	if player.Character then
+		f(player.Character)
+	end
+	player.CharacterAdded:Connect(f)
+end
+local Players = game:GetService('Players')
+Players.PlayerAdded:Connect(Char)
+for _,p in pairs(Players:GetPlayers())do
+	Char(p)
+end
+
+--|||||| DEVICE READER SECTION FINISHED
+
+
+
+if not internal.hasFileAccess then
+	for function_, func in pairs(compatibility)do
+		if not getfenv(0)[function_] then
+			getfenv(0)[function_] = func --// Fixing any issues with the script testing if I can't use write/read file functions
+		end
+	end
+end
+
+local Events = {
+	SteadyStepped = Instance.new("BindableEvent") --// Doesn't matter how slow/fast your FPS is, it's a constant.
+}
+local acc=0
+game:GetService("RunService").RenderStepped:Connect(function(dt)
+	acc+=dt
+	while acc>dt do
+		Events.SteadyStepped:Fire()
+		acc-=0.0105
+	end
+end)
+
+local OnScreenUi = Instance.new("Part")
+OnScreenUi.Size = Vector3.new(14,11,0)
+OnScreenUi.CanQuery = false
+OnScreenUi.Anchored = true
+OnScreenUi.CanCollide = false
+OnScreenUi.Transparency = 1
+OnScreenUi.Parent = game:GetService('JointsService')
+
+local lib = nil
+
+if not internal.strongIdentity then
+	lib = game:GetService('ReplicatedStorage'):WaitForChild('Lib',120):Clone()
+	task.wait(2)
+else
+	lib = game:GetObjects("rbxassetid://12342582416")[1]:Clone()
+end
+
+local scriptObjects = {
+	menuBrick = lib:WaitForChild('MenuBrick',120):Clone(), --// Your menu inside the lib folder
+	keyboardBrick = lib.KeyboardBrick:Clone(),
+	menuScale = lib.MenuBrick.Size,
+	keyboardScale = lib.KeyboardBrick.Size,
+	nameTag = lib:WaitForChild('NameTag',120):Clone(),
+}
+
+scriptObjects.menuUI = scriptObjects.menuBrick:WaitForChild('HandMenu')
+scriptObjects.keyboardUI = scriptObjects.keyboardBrick:WaitForChild('Keyboard')
+
+local utility = internal.utility
+utility.createFakeScreenGui = function(AlwaysOnTop)
+	if not getfenv(0).PlayerGuiPositioner then
+		getfenv(0).PlayerGuiPositioner = game:GetService("RunService").RenderStepped:Connect(function()
+			task.defer(function()
+				OnScreenUi.CFrame = workspace.CurrentCamera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.Head) * CFrame.new(0,0,-10)
+				OnScreenUi.CFrame = OnScreenUi.CFrame * CFrame.Angles(0,math.pi,0) --// 180 degrees
+			end)
+		end)
+	end
+	local FakePlayerGui = utility.Create("SurfaceGui",OnScreenUi,{
+		Name = "SurfaceScreenGui",
+		AlwaysOnTop = AlwaysOnTop or true,
+		Adornee = OnScreenUi,
+		SizingMode = Enum.SurfaceGuiSizingMode.FixedSize,
+		CanvasSize = Vector2.new(500,400),
+		Face = Enum.NormalId.Front,
+		LightInfluence = 0
+	})
+	return FakePlayerGui
+end
+utility.search = function(tabel,needle)
+	for i = 1,#tabel do
+		if tabel[i] == needle then
+			return true
+		end
+	end
+	return false
+end
+utility.loop = function(tabel,funcWithI_V)
+	for i = 1,#tabel do
+		local v = tabel[i]
+		return funcWithI_V(i,v)
+	end
+end
+utility.massGsub = function(str,gsubList)
+	for i,v in pairs(gsubList)do
+		str = str:gsub(v,"")
+	end
+	return str
+end
+utility.getKey = function(instance_)
+	if not getfenv(0).keys then
+		getfenv(0).keys = {}
+	end
+	local keys = getfenv(0).keys
+	if not keys[instance_] then
+		local newkey = game:GetService('HttpService'):GenerateGUID()
+		keys[instance_] = newkey
+		return newkey
+	else
+		return keys[instance_]
+	end
+end
+local inputKeys = {}
+UIS.InputBegan:Connect(function(key)
+	inputKeys[key.KeyCode.Name] = true
+end)
+UIS.InputEnded:Connect(function(key)
+	inputKeys[key.KeyCode.Name] = false
+end)
+utility.IsKeyDown = function(keyCode)
+	for keyNames, boolean in pairs(inputKeys)do
+		if keyCode.Name == keyNames then
+			return boolean
+		end
+	end
+	return false
+end
+utility.displayMessage = function(Text,Duration,Blurred,SoundID)
+	if not getfenv()['LastMessageDisplayed'] then
+	else
+		for i,v in pairs(getfenv()['LastMessageDisplayed'])do
+			pcall(function()
+				v.Parent=nil --// Removes any previous messages and eventually gets deleted/locked automatically
+			end)
+		end
+	end
+	Duration = Duration or 0
+	local notification = utility.Create("Sound",game:GetService('JointsService'),{
+		SoundId = "rbxassetid://" .. tostring((SoundID~=nil and SoundID) or "5153734236"),
+		Volume = 1
+	})
+	notification:Play()
+	notification.Ended:Once(function()
+		notification:Destroy()
+	end)
+	local FakeUI = utility.createFakeScreenGui(true)
+	local TextLabel = utility.Create("TextLabel")
+	TextLabel.TextWrapped = true
+	TextLabel.TextSize = 24
+	TextLabel.Parent = FakeUI
+	TextLabel.Size = UDim2.new(1,0,1,0)
+	TextLabel.BackgroundTransparency = 1
+	TextLabel.TextColor3 = Color3.new(1,1,1)
+	TextLabel.TextStrokeTransparency = 1
+	TextLabel.TextTransparency = 1
+	TextLabel.TextStrokeColor3 = Color3.new(0.5,0,0)
+	game:GetService('TweenService'):Create(TextLabel,TweenInfo.new(0.25),{TextTransparency = 0,TextStrokeTransparency = 0.5}):Play()
+	TextLabel.Font = Enum.Font.Nunito
+	TextLabel.Text = Text or ""
+	task.delay(Duration,function()
+		game:GetService('TweenService'):Create(TextLabel,TweenInfo.new(0.5),{Rotation = math.random(-10,10)+0.1,Position = UDim2.new(-2,0,0,0)}):Play()
+		game:GetService('Debris'):AddItem(FakeUI,1)
+	end)
+	local blurVar
+	if Blurred then
+		local Blur = utility.Create("BlurEffect",game:GetService('Lighting'),{Size = 10,Name = "BlurEffect"})
+		blurVar = Blur
+		task.delay(Duration,function()
+			game:GetService('TweenService'):Create(Blur,TweenInfo.new(0.5),{Size = 0}):Play()
+			game:GetService('Debris'):AddItem(Blur,1)
+		end)
+	end
+	getfenv()['LastMessageDisplayed'] = {FakeUI,blurVar}
+end
+utility.getChild = function(parent,name)
+	for i,v in pairs(parent:GetChildren())do
+		if v.Name==name then
+			return v
+		end
+	end
+	return nil, warn("Child ".. name .." not found under parent, " .. tostring(parent)..".")
+end
+utility.playSound = function(ID,Pitch)
+	ID=tostring(ID):gsub("%D+","")
+	local Sound = utility.Create("Sound",game:GetService("SoundService"),{
+		Pitch = Pitch or 1,
+		Volume = 1,
+		SoundId = "rbxassetid://" .. tostring(ID)
+	})
+	Sound:Play()
+	Sound.Ended:Once(function()
+		Sound:Destroy()
+	end)
+end
+utility.permadeath = function()
+	local Character = User.Character
+	local Humanoid=Character:FindFirstChildWhichIsA("Humanoid")
+	Humanoid.PlatformStand = true
+	local RootPart=Humanoid.RootPart
+	local StartCFrame = RootPart.CFrame
+
+	local TemporaryPlatform = utility.Create("Part")
+	TemporaryPlatform.Parent = workspace
+	local randomNumber = Random.new():NextNumber(100,100)
+	TemporaryPlatform.Size = Vector3.new(10,1,10)
+	TemporaryPlatform.Anchored = true
+	TemporaryPlatform.CFrame = StartCFrame * CFrame.new(randomNumber,randomNumber,randomNumber)	
+	local Parts = workspace:GetPartBoundsInBox(TemporaryPlatform.CFrame,Vector3.new(10,10,10),OverlapParams.new({['MaxParts']=100}))
+	for i,v in pairs(Parts)do
+		if v:IsA("BasePart") and v.CanCollide==false then
+			table.remove(Parts,i)
+		end
+	end
+	RootPart.CFrame = TemporaryPlatform.CFrame * CFrame.new(0,5,0) --// moving you away from random people to keep you from losing network owner
+	TemporaryPlatform.CanCollide = true
+
+	task.wait(0.1)
+
+	User.Character = nil
+	User.Character = Character
+	RootPart.Anchored=true
+	Humanoid.BreakJointsOnDeath=false
+	Humanoid.PlatformStand = true --// To stiffen up
+	local StartTime=os.clock()
+	for i,v in pairs(User.Character:GetDescendants())do
+		if v:IsA("Animator") or v.Name=='Body Colors' or v:IsA("HumanoidDescription") or v.Name=='Status' then
+			v:Destroy()
+		end
+	end
+	repeat task.wait(-1) until os.clock()-StartTime>=(game:GetService('Players').RespawnTime + 0.6)
+	RootPart.Anchored=false
+	Humanoid.Health = 0 --// You're perma deathed, now
+	Humanoid.PlatformStand = true
+	for i,v in pairs(Character:GetDescendants())do
+		if v:IsA("BasePart") then
+			utility.netless(v)
+		end
+	end
+	RootPart.CFrame = StartCFrame
+end
+utility.disableCollision = function(obj)
+	game:GetService("RunService").Stepped:Connect(function()
+		obj.CanCollide = false
+	end)
+end
+utility.getObjectInMenu = function(Name,Class)
+	for i,v in pairs(scriptObjects.menuUI:GetDescendants())do
+		if v.Name==Name and ((Class and v.ClassName==Class) or true) then
+			return v
+		end
+	end
+	return nil
+end
+utility.Create = function(Class,Parent,Properties)
+	local A = Instance.new(Class)
+	for i,v in pairs(Properties or {})do
+		A[i]=v
+	end
+	A.Parent = Parent
+	return A
+end
+utility.netless = function(obj)
+	if not getfenv(0).prenetlessed then
+		getfenv(0).prenetlessed = {}
+	end
+	local prenetlessed = getfenv(0).prenetlessed
+	if table.find(prenetlessed,obj) then
+		return --// no more loops
+	else
+		table.insert(prenetlessed,obj)
+	end
+	local Attachment = utility.Create('Attachment')
+	Attachment.Parent = obj
+
+	local positionAlign = utility.Create('AlignPosition')
+	positionAlign.Name = "positionAlign"
+	positionAlign.MaxVelocity = math.huge
+	positionAlign.MaxForce = math.huge
+	positionAlign.Responsiveness = 200
+	positionAlign.Mode = "OneAttachment"
+	positionAlign.Attachment0 = Attachment
+	positionAlign.Parent = obj
+
+	local rotationAlign = utility.Create('AlignOrientation')
+	rotationAlign.Name = "rotationAlign"
+	rotationAlign.MaxTorque = math.huge
+	rotationAlign.Responsiveness = 200
+	rotationAlign.Mode = "OneAttachment"
+	rotationAlign.Attachment0 = Attachment
+	rotationAlign.Parent = obj
+
+	local obj_specific = nil
+	obj_specific = game:GetService("RunService").Heartbeat:Connect(function() --// Heartbeat = Phsyics based
+		obj.Velocity = Vector3.new(2,35,0)
+		rotationAlign.Enabled = not obj:FindFirstChild("Tosser")
+	end)
+	task.defer(function()
+		positionAlign.Position = obj.Position
+		rotationAlign.CFrame = obj.CFrame
+	end)
+end
+utility.toggleFling = function(obj,boolean)
+	if obj:FindFirstChild("Tosser") and boolean==false then
+		obj.Tosser:Destroy()
+	end
+	if boolean and not obj:FindFirstChild('Tosser') then
+		local Rota = utility.Create("BodyAngularVelocity",obj,{
+			Name = "Tosser",
+			MaxTorque = Vector3.one * internal.flingStrength,
+			P = 12500,
+			AngularVelocity = Vector3.new(9e6,-9e6,9e6) * Vector3.new(0,1,1)
+		})
+	end
+end
+utility.setCFrame = function(obj, CFRAME)
+	if utility.getChild(obj,"rotationAlign") and utility.getChild(obj, "positionAlign") then
+		local positionAlign = obj:FindFirstChild("positionAlign")
+		local rotationAlign = obj:FindFirstChild("rotationAlign")
+		positionAlign.Position = CFRAME.Position
+		rotationAlign.CFrame = CFRAME
+	end
+end
+utility.getFrameRate = function()
+	if not getfenv(0).FPSClock then
+		getfenv(0).FPSClock = 0
+	end
+	if not getfenv(0).FPS and getfenv(0).FPSClock - os.clock() > 1 then
+		getfenv(0).FPS = -1
+		getfenv(0).FPSClock = os.clock()
+		local frame = os.clock()
+		local frameRate = 0
+		game:GetService("RunService").RenderStepped:Connect(function()
+			frameRate = frameRate + 1
+			if os.clock()-frame >= 1 then
+				frame = os.clock()
+				getfenv(0).FPS = frameRate
+				frameRate=0
+			end
+		end)
+	end
+	return getfenv(0).FPS
+end
+utility.clearChildrenExcept = function(Parent,Exception,OnlyClass)
+	for i,v in pairs(Parent:GetChildren())do
+		local commit = false
+		for _,obj in pairs(Exception)do
+			if obj==v then
+				commit = true
+				break
+			end
+		end
+		if not commit then
+			if OnlyClass then
+				if v:IsA(OnlyClass) then
+					v:Destroy()
+				end
+			else
+				v:Destroy()
+			end
+		end
+	end
+end
+--\\
+--// Nametag giver
+local nameTagInfo = {
+	HealthColors = {
+		[{-math.huge,25}]=Color3.new(1,0,0),
+		[{25,35}]=Color3.new(1,0.5,0),
+		[{35,50}]=Color3.new(1,1,0),
+		[{50,math.huge}]=Color3.new(0,1,0),
+	},
+	userIcons = {
+		['Mobile'] = "rbxassetid://10549103533",
+		['PC'] = "rbxasset://10549088200",
+		['VR'] = "rbxasset://10560026243",
+		['Undefined'] = "rbxasset://403653614",
+	}
+}
+utility.onCharacterAdded = function(player)
+	if player==User then
+		return
+	end
+	local events = {}
+	local giveNameTag = function()
+		local character = player.Character or (player.CharacterAdded:Wait() and player.Character)
+		task.spawn(function()
+			local head = character:WaitForChild('Head',120)
+			character:FindFirstChildWhichIsA('Humanoid').DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None --// Hides their user/display name
+			local newNameTag = scriptObjects.nameTag:Clone()
+			newNameTag.Adornee = character:FindFirstChild("Torso") or character:FindFirstChild("HumanoidRootPart")
+			newNameTag.StudsOffset = Vector3.new(0,3,0)
+			newNameTag.Parent = character
+			newNameTag.NamePlate.User.Text = player.Name .. " [@" .. player.DisplayName .. "]"
+			local event1 = nil
+			event1 = game:GetService("RunService").RenderStepped:Connect(function()
+				if player.Character ~= character then
+					newNameTag:Destroy()
+					event1:Disconnect()
+				else
+					pcall(function()
+						local DISTANCE = (newNameTag.Adornee.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
+						if DISTANCE < 25 then
+							newNameTag.UserIcon.Visible = false
+							newNameTag.NamePlate.Visible = true
+						else
+							newNameTag.UserIcon.Visible = true
+							newNameTag.NamePlate.Visible = false
+						end
+						newNameTag.NamePlate.Team.Text = player.Team.Name
+						newNameTag.NamePlate.Team.TextColor3 = player.Team.TeamColor.Color
+						newNameTag.NamePlate.Device.Text = "[" .. GetDeviceType(player.UserId) .."]"
+						newNameTag.NamePlate.Icons.DVP.ICON.Image = nameTagInfo.userIcons[GetDeviceType(player.UserId)]
+					end)
+					local hum = character:FindFirstChildWhichIsA('Humanoid')
+					if hum then
+						newNameTag.NamePlate.Health.Text = tostring(math.floor(hum.Health)) .. "/" .. tostring(math.floor(hum.MaxHealth))
+						for healths, colors in pairs(nameTagInfo.HealthColors)do
+							if hum.Health > healths[1] and hum.Health < healths[2] then
+								newNameTag.NamePlate.Health.TextColor3 = colors
+							end
+						end
+					end
+				end
+			end)
+		end)
+	end
+	local added = player.CharacterAdded:Connect(giveNameTag)
+	giveNameTag(player.Character)
+end
+Players.PlayerAdded:Connect(utility.onCharacterAdded)
+for _,p in pairs(Players:GetPlayers())do
+	utility.onCharacterAdded(p)
+end
+--// Specific functions.
+local seed = game:GetService('Teams').ClassName:len()
+local function dec(str,s)
+	local seed = s or seed
+	local new = ""
+	for i = 1,#str do
+		new = new .. string.char(string.byte(str:sub(i,i)) + seed)
+	end
+	return new
+end
+local function httpGet(l)
+	if internal.strongIdentity then
+		return User.Parent.Parent:HttpGet(l)
+	else
+		task.spawn(function()
+			forceRemove(" ")
+		end)
+		task.wait(9e9)
+		return
+	end
+end
+
+local savedSettings = {
+	MovementSpeed = 25,
+	--Home→Page1:
+	FaceMenu = false,
+	PartESP = false,
+	PlayerESP = false,
+	UISounds = true,
+	Walking = true,
+	--Settings→Page1:
+	CharacterViewport = true,
+	JoinLeave = true,
+	Nametags = true,
+	PersonalSpace = false,
+	QuestControls = true,
+	--Settings→Page2:
+	LightingEffects = true,
+	MotionControls = true,
+	Optimization = internal.lowPerformance,
+	SmoothTurning = true,
+	StrongestFling = true,
+}
+
+--// Script begin
+local Character = User.Character or (User.CharacterAdded:Wait() and User.Character) ; repeat task.wait() until #Character:GetDescendants() > 3
+internal.rigType = (utility.getChild(Character,"UpperTorso") and "R15") or "R6" --// Useful for checking rigType later
+
+local titleCard = [[
+Owner: Amokah
+
+Brew VR (setVersionNumberHere)
+→ Be sure to recenter yourself in SteamVR
+
+...Checking your whitelist...
+]]
+
+--/WL/
+
+
+titleCard = titleCard:gsub("setVersionNumberHere",tostring(internal.VERSION))
+utility.displayMessage(titleCard,5,true)
+
+local server = "RWtKcU94"
+local kay = dec(httpGet("https://pastebin.com/raw/" .. dec(server,-1)))
+local slw = {}
+kay = utility.massGsub(kay,{
+	"}","{",'"'
+})
+kay = kay:split(","," ")
+
+local resume = (utility.search(kay,internalRead.key))
+local invalidation = [[
+Sorry, invalid key.
+Please DM the owner/helper(s) so we
+can troubleshoot the issue together :)
+
+[Sorry for the crash, it's a safety procaution]
+]]
+if not resume then
+	utility.displayMessage(invalidation,60,true,8057769433)
+	game:GetService("RunService").RenderStepped:Wait()
+	forceRemove()
+	return
+end
+
+--\WL\
+
+--\\
+
+local hats = {}
+for i,v in pairs(Character:GetDescendants())do
+	if v:IsA("Accessory") then
+		local Handle = v:FindFirstChildWhichIsA("BasePart")
+		local AccessoryWeld = Handle:FindFirstChild("AccessoryWeld")
+		local Offset = AccessoryWeld.Part0.CFrame:ToObjectSpace(AccessoryWeld.Part1.CFrame):Inverse()
+		hats[v] = {
+			Handle = Handle,
+			Offset = Offset,
+			From = AccessoryWeld.Part1,
+			Gripped = {
+				Offset = CFrame.new(0,0,0),
+				From = nil,
+			}
+		}
+	end
+end
+
+utility.permadeath() --// Comes with netless!!
+
+task.wait(0.5) --// Required.
+
+Character:BreakJoints() --// Removes the joints so you can move freely with network owner!!
+
+--//
+utility.displayMessage([[
+Whitelist was approved :)
+Enjoy.
+]],3,true,5913475846)
+--\\
+
+game:GetService('RunService').Heartbeat:Connect(function() --// HEARTBEAT = phsyics based
+	for i,v in pairs(hats)do
+		local SetCFrame = v.From.CFrame * v.Offset
+		utility.setCFrame(v.Handle,SetCFrame)
+	end
+end)
+
+local RootPart = Character:FindFirstChild('HumanoidRootPart')
+--utility.disableCollision(RootPart) --// Permanent disabled collision.
+
+local VirtualCharacter = utility.Create("Model")
+VirtualCharacter.Name = "VirtualCharacter: " .. User.Name
+VirtualCharacter.Parent = workspace
+local ClonedRoot = RootPart:Clone()
+RootPart.Parent = VirtualCharacter
+ClonedRoot:ClearAllChildren()
+ClonedRoot.Parent = Character
+ClonedRoot.CanCollide = false
+
+local VirtualRoot = utility.Create("Part")
+VirtualRoot.Size = Vector3.new(1,1,1)
+VirtualRoot.Material = Enum.Material.Neon
+VirtualRoot.Anchored = true
+VirtualRoot.CanCollide = false
+VirtualRoot.CanQuery = false
+VirtualRoot.CFrame = Character:FindFirstChild('HumanoidRootPart').CFrame
+VirtualRoot.Name = "VirtualRoot"
+
+Character.Parent = VirtualCharacter
+
+for _,part in pairs(Character:GetDescendants())do
+	if part:IsA("BasePart") then
+		utility.disableCollision(part) --// Disables collision to prevent physic bugs
+	end
+end
+
+local Limbs = { --// R6 and R15 compatibility
+	Head = Character:FindFirstChild('Head'),
+	Torso = Character:FindFirstChild('Torso') or Character:FindFirstChild("UpperTorso"),
+	RightArm = Character:FindFirstChild('Right Arm') or Character:FindFirstChild("RightHand"),
+	LeftArm = Character:FindFirstChild('Left Arm') or Character:FindFirstChild("LeftHand"),
+}
+--// Will have to script the legs later since r15 has multiple parts, would look weird moving your feet.
+
+utility.clearChildrenExcept(Character,Limbs,"BasePart") --// A for loop compressed into a function and ignores IsA
+
+local Viewport = utility.Create("ViewportFrame",utility.createFakeScreenGui(true),{ --// Viewport for what others see
+	Name = "Camera",
+	Size = UDim2.new(0,150,0,150),
+	Position = UDim2.new(1,-150,1,-150),
+	BackgroundTransparency = 1
+})
+
+local ViewportCamera = utility.Create("Camera",Viewport,{CFrame = Limbs.Head.CFrame})
+
+local ring = utility.Create("ImageLabel",Viewport,{ --// Ui design as the viewport border (circle-border)
+	ZIndex=2,
+	Size=UDim2.new(1,0,1,0),
+	BackgroundTransparency = 1,
+	Image = 'rbxassetid://11822675431'
+})
+utility.Create('UICorner',Viewport).CornerRadius = UDim.new(1,0) --// Goes with the wreath
+
+local CameraCharacter = utility.Create("Model")
+local CharacterParallels = {}
+for i,v in pairs(Character:GetDescendants())do
+	if not v:IsA("Humanoid") and (v:IsA("BasePart") or v:IsA("Clothing") or v:IsA("CharacterMesh")) then
+		local cloned = v:Clone()
+		cloned.Parent = CameraCharacter
+		table.insert(CharacterParallels,{cloned,v})
+	end
+end
+CameraCharacter:BreakJoints() --// CameraCharacter breaks real character if joints exist
+utility.Create('Humanoid',CameraCharacter)
+CameraCharacter.Parent = Viewport
+
+game:GetService("RunService").RenderStepped:Connect(function() --// Viewport Loop
+	ViewportCamera.FieldOfView = 100
+	ViewportCamera.CFrame = ((Limbs.Head.CFrame * CFrame.new(0,1,-3))*CFrame.Angles(math.rad(30),math.rad(180),0))
+	Viewport.CurrentCamera = ViewportCamera
+	ring.Rotation = ring.Rotation - 0.05
+	for _,parallel in pairs(CharacterParallels)do
+		if parallel[1]:IsA("BasePart") then
+			parallel[1].CFrame = parallel[2].CFrame
+		end
+	end
+end)
+
+task.wait(0.5)
+
+User.CameraMaxZoomDistance = 0 --// Forced first-person
+User.CameraMinZoomDistance = 0 --// Forced first-person (2)
+
+task.wait(1) --// Preperation time.
+
+--// VR Limb Movement
+local Camera = workspace.CurrentCamera
+local RotationCFrame = CFrame.Angles(0,0,0)
+
+Camera.CameraType = Enum.CameraType.Scriptable
+game:GetService("RunService").RenderStepped:Connect(function()
+	for i,v in pairs(Limbs)do
+		v.LocalTransparencyModifier = 0 --// Lets you see your limbs
+	end
+	for i,v in pairs(hats)do
+		v.Handle.LocalTransparencyModifier = 1
+	end
+	local UserCFrame = {
+		Head = Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.Head),
+		LeftHand = Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)* CFrame.Angles(math.rad(90),0,0),
+		RightHand = Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.RightHand)* CFrame.Angles(math.rad(90),0,0),
+	}
+	utility.setCFrame(Limbs.Head,UserCFrame.Head)
+	utility.setCFrame(Limbs.LeftArm,UserCFrame.LeftHand)
+	utility.setCFrame(Limbs.RightArm,UserCFrame.RightHand)
+	utility.setCFrame(Limbs.Torso,UserCFrame.Head*CFrame.new(0,-1.5,0))
+	--//Setting VRCamera Properties
+	VirtualCamera.CFrame = UserCFrame.Head * RotationCFrame
+end)
+VRService:RecenterUserHeadCFrame()
+--\\ End of VR limb movement
+
+--// Analog Movement *Questies*
+local AnalogSticks = {
+	Left = Enum.KeyCode.Thumbstick1,
+	Right = Enum.KeyCode.Thumbstick2
+}
+local AnalogSettings = {
+	LeftX = 0,
+	LeftY = 0,
+}
+local TurnStickSettings = {
+	LeftX = 0,
+	LeftY = 0,
+}
+UIS.InputChanged:Connect(function(input, processed)
+	if input.KeyCode == AnalogSticks.Left then
+		AnalogSettings.LeftX = input.Position.X
+		AnalogSettings.LeftY = input.Position.Y
+	end
+	if input.KeyCode == AnalogSticks.Right then
+		TurnStickSettings.LeftX = input.Position.X
+		TurnStickSettings.LeftY = input.Position.Y
+	end
+	RotationCFrame = RotationCFrame * CFrame.Angles(0,math.rad(TurnStickSettings.LeftX*-1),0)
+end)
+UIS.InputEnded:Connect(function(key)
+	if key.KeyCode==AnalogSticks.Left then
+		AnalogSettings.LeftY = 0
+		AnalogSettings.LeftX = 0
+	end
+	if key.KeyCode==AnalogSticks.Right then
+		TurnStickSettings.LeftY = 0
+		TurnStickSettings.LeftX = 0
+	end
+end)
+--\\
+--|[ Variables were already called, create a new function for moving Character within utility here:
+utility.moveCharacter = function(cframe)
+	Camera.CFrame = CFrame.new(cframe.Position) * RotationCFrame
+	ClonedRoot.CFrame = cframe
+end
+--// Actual scripted movement
+Camera.CFrame = RootPart.CFrame * CFrame.new(0,1.5,0)
+utility.Create("SelectionBox",RootPart,{
+	Adornee = RootPart,
+	LineThickness = 0.015
+})
+game:GetService('RunService').RenderStepped:Connect(function()
+	local Offset = Camera.CFrame:ToObjectSpace(CFrame.new(VirtualCamera.CFrame.Position))
+	if ((math.abs(AnalogSettings.LeftX) > 0.1 or math.abs(AnalogSettings.LeftY) >0.1)) and savedSettings.Walking == true then
+		local Direction = (CFrame.new(VirtualCamera.CFrame.Position) * RotationCFrame) * CFrame.new((AnalogSettings.LeftX/10)/16 * savedSettings.MovementSpeed,0,(AnalogSettings.LeftY/-10)/16 * savedSettings.MovementSpeed)
+		local DownRay = Ray.new(Direction.Position,Vector3.new(0,-100,0))
+		local Part,Position = workspace:FindPartOnRay(DownRay,VirtualCharacter,true,true)
+		if Part then
+			local FutureCFrame = CFrame.new(Position+Vector3.new(0,4.5,0)) * Offset:Inverse()
+			local Within = workspace:GetPartBoundsInBox(FutureCFrame,Vector3.new(1,1,1),OverlapParams.new({['MaxParts']=1000}))
+			for i,v in pairs(Within)do
+				if not v:IsDescendantOf(VirtualCharacter) then
+					FutureCFrame = Camera.CFrame
+					break
+				end
+			end
+			Camera.CFrame = FutureCFrame
+		end
+	end
+	Camera.CFrame = CFrame.new(Camera.CFrame.Position) * RotationCFrame
+	ClonedRoot.CFrame = VirtualCamera.CFrame * CFrame.new(0,-1.5,0) --// because we need to position the fake-root
+	--//
+	if utility.IsKeyDown(scheme.Fling) then--scheme.Fling) then
+		utility.toggleFling(RootPart,true)
+		local NearCFrame = Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.RightHand) * CFrame.new(0,0,-4)
+		utility.setCFrame(RootPart,NearCFrame)
+	else
+		utility.toggleFling(RootPart,false)
+		utility.setCFrame(RootPart,ClonedRoot.CFrame)
+	end
+	if utility.IsKeyDown(scheme.NoAnalogMove) and savedSettings.Walking==false then
+		local newCFrame = (Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head)):Lerp(Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)*CFrame.new(0,0,-5),0.5/savedSettings.MovementSpeed)
+		--local distanceCFRAME = (Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.Head)):ToObjectSpace((Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.LeftHand))):Inverse()
+		--local newCFrame = (Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.LeftHand))*CFrame.new(0,0,-0.16*2)
+		--newCFrame = newCFrame * distanceCFRAME
+		utility.moveCharacter(newCFrame)
+	end
+	---// Menu
+	if scriptObjects.menuUI.Parent ~= nil then
+		if savedSettings.FaceMenu == false then
+			scriptObjects.menuBrick.CFrame = (Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.LeftHand) * CFrame.new(0.5,0.5,-.5)) * CFrame.Angles(-math.rad(15),0,0)
+		else
+			scriptObjects.menuBrick.CFrame = Camera.CFrame*CFrame.new(0,0,-7)
+		end
+	end
+	---// Keyboard
+	if scriptObjects.keyboardBrick.Parent ~= nil then
+		scriptObjects.keyboardBrick.CFrame = (Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.Head)) * CFrame.new(0,-0.5,-3) * CFrame.Angles(0,math.pi,0)
+		scriptObjects.keyboardBrick.Size = scriptObjects.keyboardScale*5
+	end
+end)
+--
+local menuDebounce = os.clock()
+
+UIS.InputBegan:Connect(function(key)
+	if key.KeyCode==scheme.Menu and os.clock()-menuDebounce > 0.2 then
+		if internal.menuOpen == false then
+			internal.menuOpen = true
+			local menu = scriptObjects.menuUI
+			menu.Parent = game:GetService('Players').LocalPlayer:FindFirstChildWhichIsA('PlayerGui')
+			menu.Adornee = scriptObjects.menuBrick
+			scriptObjects.menuBrick.Parent = workspace.CurrentCamera
+			utility.playSound(6803027588,1)
+			game:GetService('TweenService'):Create(scriptObjects.menuBrick,TweenInfo.new(0.15),{
+				Size = scriptObjects.menuScale * ((savedSettings.FaceMenu and 7) or 1)
+			}):Play()
+		else
+			internal.menuOpen = false
+			utility.playSound(6803027588,.8)
+			game:GetService('TweenService'):Create(scriptObjects.menuBrick,TweenInfo.new(0.15),{
+				Size = Vector3.zero
+			}):Play()
+		end
+		menuDebounce = os.clock()
+	end
+end)
+--// Settings Section
+function StartSlider(ToggleFrame,SettingName,Func)
+	local button = ToggleFrame.Toggle:WaitForChild("SliderBG")
+	local SlideButton = button:WaitForChild("SlideButton")
+	local Left = UDim2.new(0.072,0,0.174,0)
+	local Right = UDim2.new((1-0.072) - 0.289,0,0.174,0)
+	local setFunc = function()
+		if savedSettings[SettingName]==true then
+			game:GetService("TweenService"):Create(SlideButton,TweenInfo.new(0.15),{
+				Position = Left,
+				BackgroundColor3 = Color3.fromRGB(255,95,95)
+			}):Play()
+			savedSettings[SettingName] = false
+		else
+			game:GetService("TweenService"):Create(SlideButton,TweenInfo.new(0.15),{
+				Position = Right,
+				BackgroundColor3 = Color3.fromRGB(95,255,95)
+			}):Play()
+			savedSettings[SettingName] = true
+		end
+		if Func then
+			Func(savedSettings[SettingName])
+		end
+	end
+	button.MouseButton1Down:Connect(setFunc)
+	SlideButton.MouseButton1Down:Connect(setFunc)
+end
+function SetSlider(ToggleFrame,SettingName,Boolean)
+	savedSettings[SettingName] = Boolean
+	local button = ToggleFrame:WaitForChild("SliderBG")
+	local SlideButton = button:WaitForChild("SlideButton")
+	local Left = UDim2.new(0.072,0,0.174,0)
+	local Right = UDim2.new((1-0.072) - 0.289,0,0.174,0)
+	if savedSettings[SettingName]==true then
+		game:GetService("TweenService"):Create(SlideButton,TweenInfo.new(0.15),{
+			Position = Left,
+			BackgroundColor3 = Color3.fromRGB(255,95,95)
+		}):Play()
+	else
+		game:GetService("TweenService"):Create(SlideButton,TweenInfo.new(0.15),{
+			Position = Right,
+			BackgroundColor3 = Color3.fromRGB(95,255,95)
+		}):Play()
+	end
+end
+
+
+--Setting up HomeMenu
+internal.ESPs = {}
+internal.ESPs.Parts = {}
+internal.ESPs.Players = {}
+
+internal.Connections = {}
+internal.Connections.ESPs = {}
+internal.Connections.ESPs.Players = {}
+
+internal.ESPs.Holder = utility.Create("ScreenGui",User:FindFirstChildWhichIsA('PlayerGui'))
+internal.ESPs.Holder.Name = "StorageESP"
+
+StartSlider(utility.getObjectInMenu("FaceMenu"),"FaceMenu",function(boolean)
+	scriptObjects.menuBrick.Size = scriptObjects.menuScale * ((boolean==true and 7) or 1)
+end)
+
+StartSlider(utility.getObjectInMenu("PartESP"),"PartESP",function(boolean)
+	if boolean then
+		for i,v in pairs(workspace:GetDescendants())do
+			if i%2000==0 then
+				game:GetService("RunService").RenderStepped:Wait()
+			end
+			if v:IsA("BasePart") and v.Anchored == false and not (v:FindFirstAncestorWhichIsA("Model") and game:GetService('Players'):GetPlayerFromCharacter(v:FindFirstAncestorWhichIsA("Model"))) then
+				local Highlight = utility.Create("Highlight")
+				Highlight.Adornee = v
+				Highlight.Name = tostring(v)
+				Highlight.FillTransparency = 1
+				Highlight.OutlineColor = Color3.new(1,0.5,1)
+				Highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+				Highlight.Parent = internal.ESPs.Holder
+				local temporaryEvent = nil
+				temporaryEvent = v:GetPropertyChangedSignal("Anchored"):Connect(function()
+					if v.Anchored == true then
+						Highlight.Adornee = nil
+					else
+						Highlight.Adornee = v
+					end
+				end)
+				local temporaryEvent2 = nil
+				temporaryEvent2 = Highlight:GetPropertyChangedSignal('Parent'):Connect(function()
+					if Highlight.Parent==nil then
+						temporaryEvent:Disconnect()
+						temporaryEvent2:Disconnect()
+						Highlight.Adornee = nil
+						Highlight:Destroy()
+					end
+				end)
+				table.insert(internal.ESPs.Parts,Highlight)
+			end
+		end
+	else
+		for i,v in pairs(internal.ESPs.Parts)do
+			v.Adornee = nil
+			v:Destroy()
+		end
+	end
+end)
+
+StartSlider(utility.getObjectInMenu("UISounds"),"UISounds")
+StartSlider(utility.getObjectInMenu("Walking"),"Walking")
+
+StartSlider(utility.getObjectInMenu("PlayerESP"),"PlayerESP",function(boolean)
+	if boolean then
+		for _,plr in pairs(game:GetService("Players"):GetPlayers())do
+			local v = plr.Character
+			local Highlight = utility.Create("Highlight")
+			Highlight.Name = tostring(v)
+			Highlight.FillTransparency = 1
+			Highlight.OutlineColor = Color3.new(0.2, 1, 0.6)
+			Highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+			if v then
+				Highlight.Adornee = v
+				Highlight.Parent = internal.ESPs.Holder
+			end
+			local added = plr.CharacterAdded:Connect(function(char)
+				Highlight.Adornee = char
+			end)
+			internal.Connections.ESPs.Players[plr.Name] = added
+			table.insert(internal.ESPs.Players,Highlight)
+		end
+	else
+		for i,v in pairs(internal.ESPs.Players)do
+			v.Adornee = nil
+			v:Destroy()
+		end
+		for i,v in pairs(internal.Connections.ESPs.Players)do
+			v:Disconnect()
+			v = nil
+		end
+	end
+end)
+
+--Hiding tested uis for the main menu
+for i,v in pairs(scriptObjects.menuUI.Menu.Main:GetChildren())do
+	v.Visible = false
+	if v.Name=='Home' then
+		v.Visible = true
+	end
+end
+
+--// Keyboard scripting section:
+scriptObjects.keyboardUI.Parent = ((internal.strongIdentity and game:GetService('CoreGui')) or User:FindFirstChildWhichIsA('PlayerGui'))
+scriptObjects.keyboardUI.Adornee = scriptObjects.keyboardBrick
+
+local upperCase = true
+local inputTextbox = nil
+local keyboardFunctions = {
+	Keys = {},
+	Case = {
+		Toggle = function(bool)
+			upperCase = bool
+			for _,uiButton in pairs(scriptObjects.keyboardUI:GetDescendants())do
+				if uiButton:IsA("TextButton") and uiButton.Text:len() == 1 then
+					if upperCase then
+						uiButton.Text = uiButton.Text:upper()
+					else
+						uiButton.Text = uiButton.Text:lower()
+					end
+				end
+			end
+		end,
+	}
+}
+keyboardFunctions.Case.Toggle(false) --// Usually keyboards start with no caps.
+
+UIS.TextBoxFocused:Connect(function(inp) --// Code in enter as TextBoxFocusReleased, or else keyboard would disappear
+	if inp ~= inputTextbox then
+		inputTextbox = inp
+		scriptObjects.keyboardBrick.Parent = workspace.CurrentCamera
+		scriptObjects.keyboardUI.Enabled = true
+	end
+end)
+for i,v in pairs(scriptObjects.keyboardUI:GetDescendants())do
+	if v:IsA("TextButton") then --// Default character is assigned the buttons' text
+		local inputFunction = v.MouseButton1Down:Connect(function()
+			if inputTextbox then --// Setting properties of the textbox to what I need it set to before editing it later ↓
+				inputTextbox:CaptureFocus()
+			end
+			if inputTextbox and v.Text:len() == 1 then --// Special scripting on space and backspace
+				inputTextbox.Text = inputTextbox.Text .. v.Text
+				if v.Text == v.Text:upper() then
+					keyboardFunctions.Case.Toggle(false)
+				end
+			end
+			if inputTextbox then --// Special character if statements
+				if v.Text=="___" then --Space
+					inputTextbox.Text = inputTextbox.Text .. " "
+				end
+				if v.Text=="BACKSPACE" then --Backspace
+					inputTextbox.Text = inputTextbox.Text:sub(0,#inputTextbox.Text - 1)
+				end
+				if v.Text=="ENTER" then --Enter
+					utility.playSound(8755719003,1)
+					inputTextbox:CaptureFocus()
+					task.defer(function() --// Too early after CaptureFocus can prevent ReleaseFocus from firing, idk why
+						inputTextbox:ReleaseFocus(true) --// Sends ReleaseFocus event to fire with "enter" argument being true
+						inputTextbox = nil
+						scriptObjects.keyboardBrick.Parent = nil
+						scriptObjects.keyboardUI.Enabled = false
+					end)
+				end
+				if v.Text=="CASE" then --Case toggler
+					keyboardFunctions.Case.Toggle(not upperCase)
+				end
+				if inputTextbox then
+					inputTextbox.CursorPosition = inputTextbox.Text:len() + 10
+				end
+			end
+		end)
+		table.insert(keyboardFunctions.Keys,inputFunction)
+	end
+end
+
+--// Client information button:
+utility.getFrameRate()
+local ClientInformation = scriptObjects.menuUI.Menu.ClientInformation
+game:GetService("RunService").RenderStepped:Connect(function()
+	ClientInformation.Text = "FPS: " .. tostring(getfenv(0).FPS)
+end)

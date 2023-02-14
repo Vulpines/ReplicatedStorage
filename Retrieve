@@ -443,7 +443,6 @@ utility.permadeath = function()
 	Humanoid.PlatformStand = true
 	local RootPart=Humanoid.RootPart
 	local StartCFrame = RootPart.CFrame
-
 	local TemporaryPlatform = utility.Create("Part")
 	TemporaryPlatform.Parent = workspace
 	local randomNumber = Random.new():NextNumber(100,100)
@@ -456,11 +455,14 @@ utility.permadeath = function()
 			table.remove(Parts,i)
 		end
 	end
-	RootPart.CFrame = TemporaryPlatform.CFrame * CFrame.new(0,5,0) --// moving you away from random people to keep you from losing network owner
+	if internal.rigType~='R15' then
+		RootPart.CFrame = TemporaryPlatform.CFrame * CFrame.new(0,5,0) --// moving you away from random people to keep you from losing network owner
+	end
 	TemporaryPlatform.CanCollide = true
 
 	task.wait(0.1)
 
+	Humanoid.WalkSpeed = 0
 	User.Character = nil
 	User.Character = Character
 	RootPart.Anchored=true
@@ -472,9 +474,14 @@ utility.permadeath = function()
 			v:Destroy()
 		end
 	end
+	for i,v in pairs(Character:GetDescendants())do
+		if v:IsA("Motor6D") then
+			v.Transform = CFrame.new(0,0,0)
+		end
+	end
 	repeat task.wait(-1) until os.clock()-StartTime>=(game:GetService('Players').RespawnTime + 0.6)
 	RootPart.Anchored=false
-	Humanoid.Health = 0 --// You're perma deathed, now
+	--	Humanoid.Health = 0 --// You're perma deathed, now \\ Patched...
 	Humanoid.PlatformStand = true
 	for i,v in pairs(Character:GetDescendants())do
 		if v:IsA("BasePart") then
@@ -536,7 +543,7 @@ utility.netless = function(obj)
 
 	local obj_specific = nil
 	obj_specific = game:GetService("RunService").Heartbeat:Connect(function() --// Heartbeat = Phsyics based
-		obj.Velocity = Vector3.new(2,35,0)
+		obj.Velocity = Vector3.new(30,50,0)
 		rotationAlign.Enabled = not obj:FindFirstChild("Tosser")
 	end)
 	task.defer(function()
@@ -627,45 +634,47 @@ utility.onCharacterAdded = function(player)
 	end
 	local events = {}
 	local giveNameTag = function()
-		local character = player.Character or (player.CharacterAdded:Wait() and player.Character)
-		task.spawn(function()
-			local head = character:WaitForChild('Head',120)
-			character:FindFirstChildWhichIsA('Humanoid').DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None --// Hides their user/display name
-			local newNameTag = scriptObjects.nameTag:Clone()
-			newNameTag.Adornee = character:FindFirstChild("Torso") or character:FindFirstChild("HumanoidRootPart")
-			newNameTag.StudsOffset = Vector3.new(0,3,0)
-			newNameTag.Parent = character
-			newNameTag.NamePlate.User.Text = player.Name .. " [@" .. player.DisplayName .. "]"
-			local event1 = nil
-			event1 = game:GetService("RunService").RenderStepped:Connect(function()
-				if player.Character ~= character then
-					newNameTag:Destroy()
-					event1:Disconnect()
-				else
-					pcall(function()
-						local DISTANCE = (newNameTag.Adornee.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
-						if DISTANCE < 25 then
-							newNameTag.UserIcon.Visible = false
-							newNameTag.NamePlate.Visible = true
-						else
-							newNameTag.UserIcon.Visible = true
-							newNameTag.NamePlate.Visible = false
-						end
-						newNameTag.NamePlate.Team.Text = player.Team.Name
-						newNameTag.NamePlate.Team.TextColor3 = player.Team.TeamColor.Color
-						newNameTag.NamePlate.Device.Text = "[" .. GetDeviceType(player.UserId) .."]"
-						newNameTag.NamePlate.Icons.DVP.ICON.Image = nameTagInfo.userIcons[GetDeviceType(player.UserId)]
-					end)
-					local hum = character:FindFirstChildWhichIsA('Humanoid')
-					if hum then
-						newNameTag.NamePlate.Health.Text = tostring(math.floor(hum.Health)) .. "/" .. tostring(math.floor(hum.MaxHealth))
-						for healths, colors in pairs(nameTagInfo.HealthColors)do
-							if hum.Health > healths[1] and hum.Health < healths[2] then
-								newNameTag.NamePlate.Health.TextColor3 = colors
+		pcall(function()
+			local character = player.Character or (player.CharacterAdded:Wait() and player.Character)
+			task.spawn(function()
+				local head = character:WaitForChild('Head',120)
+				character:FindFirstChildWhichIsA('Humanoid').DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None --// Hides their user/display name
+				local newNameTag = scriptObjects.nameTag:Clone()
+				newNameTag.Adornee = character:FindFirstChild("Torso") or character:FindFirstChild("HumanoidRootPart")
+				newNameTag.StudsOffset = Vector3.new(0,3,0)
+				newNameTag.Parent = character
+				newNameTag.NamePlate.User.Text = player.Name .. " [@" .. player.DisplayName .. "]"
+				local event1 = nil
+				event1 = game:GetService("RunService").RenderStepped:Connect(function()
+					if player.Character ~= character then
+						newNameTag:Destroy()
+						event1:Disconnect()
+					else
+						pcall(function()
+							local DISTANCE = (newNameTag.Adornee.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
+							if DISTANCE < 25 then
+								newNameTag.UserIcon.Visible = false
+								newNameTag.NamePlate.Visible = true
+							else
+								newNameTag.UserIcon.Visible = true
+								newNameTag.NamePlate.Visible = false
+							end
+							newNameTag.NamePlate.Team.Text = player.Team.Name
+							newNameTag.NamePlate.Team.TextColor3 = player.Team.TeamColor.Color
+							newNameTag.NamePlate.Device.Text = "[" .. GetDeviceType(player.UserId) .."]"
+							newNameTag.NamePlate.Icons.DVP.ICON.Image = nameTagInfo.userIcons[GetDeviceType(player.UserId)]
+						end)
+						local hum = character:FindFirstChildWhichIsA('Humanoid')
+						if hum then
+							newNameTag.NamePlate.Health.Text = tostring(math.floor(hum.Health)) .. "/" .. tostring(math.floor(hum.MaxHealth))
+							for healths, colors in pairs(nameTagInfo.HealthColors)do
+								if hum.Health > healths[1] and hum.Health < healths[2] then
+									newNameTag.NamePlate.Health.TextColor3 = colors
+								end
 							end
 						end
 					end
-				end
+				end)
 			end)
 		end)
 	end
@@ -786,9 +795,17 @@ end
 
 utility.permadeath() --// Comes with netless!!
 
-task.wait(0.5) --// Required.
+task.wait() --// Required.
 
-Character:BreakJoints() --// Removes the joints so you can move freely with network owner!!
+for i,v in pairs(Character:GetDescendants())do
+	if v:IsA("JointInstance") then
+		if v.Name~='Neck' then
+			v:Destroy()
+		end
+	end
+end
+
+--Character:BreakJoints() --// Removes the joints so you can move freely with network owner!!
 
 --//
 utility.displayMessage([[
@@ -856,9 +873,9 @@ local ring = utility.Create("ImageLabel",Viewport,{ --// Ui design as the viewpo
 	ZIndex=2,
 	Size=UDim2.new(1,0,1,0),
 	BackgroundTransparency = 1,
-	Image = 'rbxassetid://11822675431'
+	Image = 'rbxassetid://5924942064'
 })
-utility.Create('UICorner',Viewport).CornerRadius = UDim.new(1,0) --// Goes with the wreath
+utility.Create('UICorner',Viewport).CornerRadius = UDim.new(0,0) --// Goes with the wreath
 
 local CameraCharacter = utility.Create("Model")
 local CharacterParallels = {}
@@ -987,12 +1004,12 @@ game:GetService('RunService').RenderStepped:Connect(function()
 	ClonedRoot.CFrame = VirtualCamera.CFrame * CFrame.new(0,-1.5,0) --// because we need to position the fake-root
 	--//
 	if utility.IsKeyDown(scheme.Fling) then--scheme.Fling) then
-		utility.toggleFling(RootPart,true)
-		local NearCFrame = Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.RightHand) * CFrame.new(0,0,-4)
-		utility.setCFrame(RootPart,NearCFrame)
+		--utility.toggleFling(RootPart,true)
+		--local NearCFrame = Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.RightHand) * CFrame.new(0,0,-4)
+		--utility.setCFrame(RootPart,NearCFrame)
 	else
-		utility.toggleFling(RootPart,false)
-		utility.setCFrame(RootPart,ClonedRoot.CFrame)
+		--utility.toggleFling(RootPart,false)
+		--utility.setCFrame(RootPart,ClonedRoot.CFrame)
 	end
 	if utility.IsKeyDown(scheme.NoAnalogMove) and savedSettings.Walking==false then
 		local newCFrame = (Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head)):Lerp(Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)*CFrame.new(0,0,-5),0.5/savedSettings.MovementSpeed)
@@ -1265,4 +1282,9 @@ utility.getFrameRate()
 local ClientInformation = scriptObjects.menuUI.Menu.ClientInformation
 game:GetService("RunService").RenderStepped:Connect(function()
 	ClientInformation.Text = "FPS: " .. tostring(getfenv(0).FPS)
+end)
+game:GetService("RunService").Heartbeat:Connect(function()
+	if internal.rigType=='R15' and not isnetworkowner(Character:FindFirstChild('UpperTorso')) then
+		utility.setCFrame(RootPart,Character:FindFirstChild('UpperTorso').CFrame)
+	end
 end)

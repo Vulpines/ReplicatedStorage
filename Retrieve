@@ -40,7 +40,7 @@ local VirtualCamera = {CFrame=CFrame.new(0,0,0)}
 local VRService = game:GetService('VRService')
 local UIS = game:GetService("UserInputService")
 local internal = {
-	VERSION = "2.01b",
+	VERSION = "2.02b",
 	strongIdentity = pcall(function() _ = game:GetService('CoreGui').FindFirstChild end), --// If you can access coregui, GREAT!! If you can't, it'll obviously be in studio testing mode... Maybe.
 	hasFileAccess = getfenv(0).writefile~=nil,
 	sourceFolder = "Brew\\",

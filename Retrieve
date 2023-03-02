@@ -1073,7 +1073,7 @@ end
 --// Actual scripted movement
 Camera.CFrame = RootPart.CFrame * CFrame.new(0,1.5,0)
 utility.Create("SelectionBox",RootPart,{
-	Adornee = RootPart,
+	Adornee = nil,
 	LineThickness = 0.015
 })
 game:GetService('RunService').RenderStepped:Connect(function()

@@ -40,7 +40,7 @@ local VirtualCamera = {CFrame=CFrame.new(0,0,0)}
 local VRService = game:GetService('VRService')
 local UIS = game:GetService("UserInputService")
 local internal = {
-	VERSION = "2.02b",
+	VERSION = "2.1b",
 	strongIdentity = pcall(function() _ = game:GetService('CoreGui').FindFirstChild end), --// If you can access coregui, GREAT!! If you can't, it'll obviously be in studio testing mode... Maybe.
 	hasFileAccess = getfenv(0).writefile~=nil,
 	sourceFolder = "Brew\\",
@@ -418,9 +418,11 @@ utility.displayMessage = function(Text,Duration,Blurred,SoundID)
 	getfenv()['LastMessageDisplayed'] = {FakeUI,blurVar}
 end
 utility.getChild = function(parent,name)
-	for i,v in pairs(parent:GetChildren())do
-		if v.Name==name then
-			return v
+	if parent then
+		for i,v in pairs(parent:GetChildren())do
+			if v.Name==name then
+				return v
+			end
 		end
 	end
 	return nil, warn("Child ".. name .." not found under parent, " .. tostring(parent)..".")
@@ -442,53 +444,45 @@ utility.permadeath = function()
 	local Humanoid=Character:FindFirstChildWhichIsA("Humanoid")
 	Humanoid.PlatformStand = true
 	local RootPart=Humanoid.RootPart
-	local StartCFrame = RootPart.CFrame
-	local TemporaryPlatform = utility.Create("Part")
-	TemporaryPlatform.Parent = workspace
-	local randomNumber = Random.new():NextNumber(100,100)
-	TemporaryPlatform.Size = Vector3.new(10,1,10)
-	TemporaryPlatform.Anchored = true
-	TemporaryPlatform.CFrame = StartCFrame * CFrame.new(randomNumber,randomNumber,randomNumber)	
-	local Parts = workspace:GetPartBoundsInBox(TemporaryPlatform.CFrame,Vector3.new(10,10,10),OverlapParams.new({['MaxParts']=100}))
-	for i,v in pairs(Parts)do
-		if v:IsA("BasePart") and v.CanCollide==false then
-			table.remove(Parts,i)
-		end
-	end
-	if internal.rigType~='R15' then
-		RootPart.CFrame = TemporaryPlatform.CFrame * CFrame.new(0,5,0) --// moving you away from random people to keep you from losing network owner
-	end
-	TemporaryPlatform.CanCollide = true
-
 	task.wait(0.1)
-
 	Humanoid.WalkSpeed = 0
 	User.Character = nil
 	User.Character = Character
-	RootPart.Anchored=true
-	Humanoid.BreakJointsOnDeath=false
-	Humanoid.PlatformStand = true --// To stiffen up
-	local StartTime=os.clock()
-	for i,v in pairs(User.Character:GetDescendants())do
-		if v:IsA("Animator") or v.Name=='Body Colors' or v:IsA("HumanoidDescription") or v.Name=='Status' then
-			v:Destroy()
-		end
-	end
-	for i,v in pairs(Character:GetDescendants())do
-		if v:IsA("Motor6D") then
-			v.Transform = CFrame.new(0,0,0)
-		end
-	end
-	repeat task.wait(-1) until os.clock()-StartTime>=(game:GetService('Players').RespawnTime + 0.6)
 	RootPart.Anchored=false
-	--	Humanoid.Health = 0 --// You're perma deathed, now \\ Patched...
+	Humanoid.PlatformStand = true --// To stiffen up
+	local hats = {}
+	for i,v in pairs(RootPart.Parent:GetChildren())do
+		if v:IsA("Accessory") then
+			table.insert(hats,{
+				v.Handle,
+				v.Handle.CFrame
+			})
+		end
+	end
+	workspace.CurrentCamera.CameraSubject = RootPart.Parent:FindFirstChildWhichIsA('Accessory'):FindFirstChild('Handle')
+	local StartTime=os.clock()
+	local x = RootPart.Position.X
+	local z = RootPart.Position.Z
+	repeat
+		task.wait(-1)
+		RootPart.CFrame = CFrame.new(x+10,workspace.FallenPartsDestroyHeight + 10,z+10)
+		RootPart.Velocity = Vector3.new(0,0,0)
+	until os.clock()-StartTime>=(game:GetService('Players').RespawnTime + 0.6)
 	Humanoid.PlatformStand = true
 	for i,v in pairs(Character:GetDescendants())do
 		if v:IsA("BasePart") then
 			utility.netless(v)
 		end
 	end
-	RootPart.CFrame = StartCFrame
+	Humanoid.Health = 0 --// Your joints are now gone.
+	for i,v in pairs(hats)do
+		task.spawn(function()
+			for i = 1,100 do
+				v[1].CFrame = v[2]
+				game:GetService("RunService").Heartbeat:Wait()
+			end
+		end)
+	end
 end
 utility.disableCollision = function(obj)
 	game:GetService("RunService").Stepped:Connect(function()
@@ -612,6 +606,87 @@ utility.clearChildrenExcept = function(Parent,Exception,OnlyClass)
 		end
 	end
 end
+--\\ ROBLOX BEING BAD, Now I have to use hats...
+local fakeLimbs = {
+	['Right Arm'] = utility.Create("Part",nil,{
+		Size = Vector3.new(1,2,1),
+		Name = "Right Arm",
+		Anchored = true,
+	}),
+	['Left Arm'] = utility.Create("Part",nil,{
+		Size = Vector3.new(1,2,1),
+		Name = "Right Arm",
+		Anchored = true,
+	}),
+	['Head'] = utility.Create("Part",nil,{
+		Size = Vector3.new(1,1,1),
+		Name = "Head",
+		Anchored = true,
+	}),
+	['Torso'] = utility.Create("Part",nil,{
+		Size = Vector3.new(2,2,1),
+		Name = "Torso",
+		Anchored = true,
+	}),
+}
+local accessories = {};
+utility.createHatCharacter = function()
+	local newCharacter = User.Character
+	local hum = newCharacter:FindFirstChildWhichIsA('Humanoid')
+	hum.PlatformStand = true --
+	task.wait(0.5)
+	if newCharacter:FindFirstChild("UpperTorso") then
+		local rightShoulder = newCharacter:FindFirstChild("RightUpperArm")
+		local rightFist = newCharacter:FindFirstChild("RightHand")
+		fakeLimbs["Right Arm"].CFrame = rightShoulder.CFrame:Lerp(rightFist,0.5)
+		local leftShoulder = newCharacter:FindFirstChild("LeftUpperArm")
+		local leftFirst = newCharacter:FindFirstChild("LeftHand")
+		fakeLimbs["Left Arm"].CFrame = leftShoulder.CFrame:Lerp(leftFirst,0.5)
+		fakeLimbs["Head"].CFrame = newCharacter:FindFirstChild("Head").CFrame*CFrame.new(0,0,0)
+		fakeLimbs["Torso"].CFrame = newCharacter:FindFirstChild("Head").CFrame*CFrame.new(0,-1.5,0)
+	else
+		fakeLimbs["Head"].CFrame = newCharacter:FindFirstChild("Head").CFrame*CFrame.new(0,0,0)
+		fakeLimbs["Torso"].CFrame = newCharacter:FindFirstChild("Head").CFrame*CFrame.new(0,-1.5,0)
+		fakeLimbs['Right Arm'].CFrame = newCharacter:FindFirstChild("Right Arm").CFrame
+		fakeLimbs['Left Arm'].CFrame = newCharacter:FindFirstChild("Left Arm").CFrame
+	end
+	for i,v in pairs(newCharacter:GetChildren())do
+		if v:IsA("Accessory") then
+			local Handle = v:FindFirstChild('Handle')
+			local AccessoryWeld = Handle:FindFirstChild("AccessoryWeld")
+			local Part1 = AccessoryWeld.Part1.Name
+			if utility:quickFind(Part1,{"Left Arm","LeftUpperArm","LeftLowerArm","LeftHand"}) then
+				table.insert(accessories,{
+					['Part1'] = fakeLimbs["Left Arm"],
+					['Offset'] = Handle.CFrame:ToObjectSpace(fakeLimbs["Left Arm"].CFrame):Inverse(),
+					['Handle'] = Handle,
+				})
+			end
+			if utility:quickFind(Part1,{"Right Arm","RightUpperArm","RightLowerArm","RightHand"}) then
+				table.insert(accessories,{
+					['Part1'] = fakeLimbs["Right Arm"],
+					['Offset'] = Handle.CFrame:ToObjectSpace(fakeLimbs["Right Arm"].CFrame):Inverse(),
+					['Handle'] = Handle,
+				})
+			end
+			if utility:quickFind(Part1,{"Torso"}) then
+				table.insert(accessories,{
+					['Part1'] = fakeLimbs["Torso"],
+					['Offset'] = Handle.CFrame:ToObjectSpace(fakeLimbs["Torso"].CFrame):Inverse(),
+					['Handle'] = Handle,
+				})
+			end
+			if utility:quickFind(Part1,{"Head"}) then
+				table.insert(accessories,{
+					['Part1'] = fakeLimbs["Head"],
+					['Offset'] = Handle.CFrame:ToObjectSpace(fakeLimbs["Head"].CFrame):Inverse(),
+					['Handle'] = Handle,
+				})
+			end
+		end
+	end
+	return accessories
+end
 --\\
 --// Nametag giver
 local nameTagInfo = {
@@ -628,6 +703,14 @@ local nameTagInfo = {
 		['Undefined'] = "rbxasset://403653614",
 	}
 }
+function utility:quickFind(str,tableFind)
+	for i,v in pairs(tableFind)do
+		if str:find(v) then
+			return true
+		end
+	end
+	return false
+end
 utility.onCharacterAdded = function(player)
 	if player==User then
 		return
@@ -735,9 +818,10 @@ internal.rigType = (utility.getChild(Character,"UpperTorso") and "R15") or "R6" 
 
 local titleCard = [[
 Owner: Amokah
+Version: (setVersionNumberHere)
 
-Brew VR (setVersionNumberHere)
-→ Be sure to recenter yourself in SteamVR
+[Brew VR]
+⚠️ Recenter Yourself ⚠️
 
 ...Checking your whitelist...
 ]]
@@ -757,6 +841,7 @@ kay = utility.massGsub(kay,{
 kay = kay:split(","," ")
 
 local resume = (utility.search(kay,internalRead.key))
+
 local invalidation = [[
 Sorry, invalid key.
 Please DM the owner/helper(s) so we
@@ -764,15 +849,13 @@ can troubleshoot the issue together :)
 
 [Sorry for the crash, it's a safety procaution]
 ]]
-if not resume then
+if resume then
 	utility.displayMessage(invalidation,60,true,8057769433)
 	game:GetService("RunService").RenderStepped:Wait()
 	forceRemove()
 	return
 end
-
 --\WL\
-
 --\\
 
 local hats = {}
@@ -784,7 +867,7 @@ for i,v in pairs(Character:GetDescendants())do
 		hats[v] = {
 			Handle = Handle,
 			Offset = Offset,
-			From = AccessoryWeld.Part1,
+			From = (AccessoryWeld.Part1.Name),
 			Gripped = {
 				Offset = CFrame.new(0,0,0),
 				From = nil,
@@ -792,18 +875,38 @@ for i,v in pairs(Character:GetDescendants())do
 		}
 	end
 end
+local virtualHands = {
+	Right = nil,
+	Left = nil,
+}
+local accessories = utility.createHatCharacter()
+for i,v in pairs(accessories)do
+	local hatName = v.Handle.Parent.Name
+	if hatName:lower():find("extra") and hatName:lower():find("right") then
+		virtualHands.Right = v.Handle
+	end
+	if hatName:lower():find("extra") and hatName:lower():find("left") then
+		virtualHands.Left = v.Handle
+	end
+end
 
 utility.permadeath() --// Comes with netless!!
 
 task.wait() --// Required.
 
-for i,v in pairs(Character:GetDescendants())do
-	if v:IsA("JointInstance") then
-		if v.Name~='Neck' then
-			v:Destroy()
-		end
+game:GetService("RunService").Heartbeat:Connect(function()
+	fakeLimbs.Head.CFrame = workspace.CurrentCamera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head)
+	fakeLimbs.Torso.CFrame = workspace.CurrentCamera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head) * CFrame.new(0,-1.5,0)
+	fakeLimbs["Right Arm"].CFrame = (workspace.CurrentCamera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.RightHand)) * CFrame.Angles(math.rad(-90),0,0)
+	fakeLimbs["Left Arm"].CFrame = (workspace.CurrentCamera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)) * CFrame.Angles(math.rad(-90),0,0)
+	for i,v in pairs(accessories)do
+		utility.setCFrame(v.Handle,v.Part1.CFrame*v.Offset)
 	end
-end
+	for ind, handle in pairs(virtualHands)do
+		local setCFrame = (workspace.CurrentCamera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame[ind .. "Hand"])) * CFrame.Angles(math.rad(-25),0,0)
+		utility.setCFrame(handle,setCFrame)
+	end
+end)
 
 --Character:BreakJoints() --// Removes the joints so you can move freely with network owner!!
 
@@ -814,14 +917,14 @@ Enjoy.
 ]],3,true,5913475846)
 --\\
 
-game:GetService('RunService').Heartbeat:Connect(function() --// HEARTBEAT = phsyics based
-	for i,v in pairs(hats)do
-		local SetCFrame = v.From.CFrame * v.Offset
-		utility.setCFrame(v.Handle,SetCFrame)
-	end
-end)
+--game:GetService('RunService').Heartbeat:Connect(function() --// HEARTBEAT = phsyics based
+--	for i,v in pairs(hats)do
+--		local SetCFrame = v.From.CFrame * v.Offset
+--		utility.setCFrame(v.Handle,SetCFrame)
+--	end
+--end)
 
-local RootPart = Character:FindFirstChild('HumanoidRootPart')
+local RootPart = fakeLimbs.Torso
 --utility.disableCollision(RootPart) --// Permanent disabled collision.
 
 local VirtualCharacter = utility.Create("Model")
@@ -840,6 +943,7 @@ VirtualRoot.Anchored = true
 VirtualRoot.CanCollide = false
 VirtualRoot.CanQuery = false
 VirtualRoot.CFrame = Character:FindFirstChild('HumanoidRootPart').CFrame
+VirtualRoot.Transparency = 1
 VirtualRoot.Name = "VirtualRoot"
 
 Character.Parent = VirtualCharacter
@@ -850,15 +954,6 @@ for _,part in pairs(Character:GetDescendants())do
 	end
 end
 
-local Limbs = { --// R6 and R15 compatibility
-	Head = Character:FindFirstChild('Head'),
-	Torso = Character:FindFirstChild('Torso') or Character:FindFirstChild("UpperTorso"),
-	RightArm = Character:FindFirstChild('Right Arm') or Character:FindFirstChild("RightHand"),
-	LeftArm = Character:FindFirstChild('Left Arm') or Character:FindFirstChild("LeftHand"),
-}
---// Will have to script the legs later since r15 has multiple parts, would look weird moving your feet.
-
-utility.clearChildrenExcept(Character,Limbs,"BasePart") --// A for loop compressed into a function and ignores IsA
 
 local Viewport = utility.Create("ViewportFrame",utility.createFakeScreenGui(true),{ --// Viewport for what others see
 	Name = "Camera",
@@ -867,7 +962,7 @@ local Viewport = utility.Create("ViewportFrame",utility.createFakeScreenGui(true
 	BackgroundTransparency = 1
 })
 
-local ViewportCamera = utility.Create("Camera",Viewport,{CFrame = Limbs.Head.CFrame})
+local ViewportCamera = utility.Create("Camera",Viewport,{CFrame = fakeLimbs.Head.CFrame})
 
 local ring = utility.Create("ImageLabel",Viewport,{ --// Ui design as the viewport border (circle-border)
 	ZIndex=2,
@@ -892,7 +987,7 @@ CameraCharacter.Parent = Viewport
 
 game:GetService("RunService").RenderStepped:Connect(function() --// Viewport Loop
 	ViewportCamera.FieldOfView = 100
-	ViewportCamera.CFrame = ((Limbs.Head.CFrame * CFrame.new(0,1,-3))*CFrame.Angles(math.rad(30),math.rad(180),0))
+	ViewportCamera.CFrame = ((fakeLimbs.Head.CFrame * CFrame.new(0,1,-3))*CFrame.Angles(math.rad(30),math.rad(180),0))
 	Viewport.CurrentCamera = ViewportCamera
 	ring.Rotation = ring.Rotation - 0.05
 	for _,parallel in pairs(CharacterParallels)do
@@ -915,21 +1010,20 @@ local RotationCFrame = CFrame.Angles(0,0,0)
 
 Camera.CameraType = Enum.CameraType.Scriptable
 game:GetService("RunService").RenderStepped:Connect(function()
-	for i,v in pairs(Limbs)do
+	for i,v in pairs(fakeLimbs)do
 		v.LocalTransparencyModifier = 0 --// Lets you see your limbs
 	end
 	for i,v in pairs(hats)do
 		v.Handle.LocalTransparencyModifier = 1
+	end
+	for i,v in pairs(virtualHands)do
+		v.LocalTransparencyModifier = 0
 	end
 	local UserCFrame = {
 		Head = Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.Head),
 		LeftHand = Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)* CFrame.Angles(math.rad(90),0,0),
 		RightHand = Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.RightHand)* CFrame.Angles(math.rad(90),0,0),
 	}
-	utility.setCFrame(Limbs.Head,UserCFrame.Head)
-	utility.setCFrame(Limbs.LeftArm,UserCFrame.LeftHand)
-	utility.setCFrame(Limbs.RightArm,UserCFrame.RightHand)
-	utility.setCFrame(Limbs.Torso,UserCFrame.Head*CFrame.new(0,-1.5,0))
 	--//Setting VRCamera Properties
 	VirtualCamera.CFrame = UserCFrame.Head * RotationCFrame
 end)
@@ -1282,9 +1376,4 @@ utility.getFrameRate()
 local ClientInformation = scriptObjects.menuUI.Menu.ClientInformation
 game:GetService("RunService").RenderStepped:Connect(function()
 	ClientInformation.Text = "FPS: " .. tostring(getfenv(0).FPS)
-end)
-game:GetService("RunService").Heartbeat:Connect(function()
-	if internal.rigType=='R15' and not isnetworkowner(Character:FindFirstChild('UpperTorso')) then
-		utility.setCFrame(RootPart,Character:FindFirstChild('UpperTorso').CFrame)
-	end
 end)

@@ -850,7 +850,7 @@ can troubleshoot the issue together :)
 
 [Sorry for the crash, it's a safety procaution]
 ]]
-if resume then
+if not resume then
 	utility.displayMessage(invalidation,60,true,8057769433)
 	game:GetService("RunService").RenderStepped:Wait()
 	forceRemove()

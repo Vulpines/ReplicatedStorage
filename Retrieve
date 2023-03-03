@@ -843,8 +843,6 @@ kay = utility.massGsub(kay,{
 kay = kay:split(","," ")
 
 local resume = (utility.search(kay,internalRead.key))
-warn("Resume: ", resume)
-warn("Key: ", internalRead.key)
 local invalidation = [[
 Sorry, invalid key.
 Please DM the owner/helper(s) so we
@@ -1414,23 +1412,23 @@ local initiatePropButton = function(vpfbutton)
 		end
 	end)
 end
-local propCreationMain = scriptObjects.menuBrick.HandMenu.Menu.Main.PropCreation
-local hatButton = propCreationMain.Page1.HatButton:Clone()
-propCreationMain.Page1.HatButton:Destroy()
-for i,v in pairs(accessories)do
-	local newButton = hatButton:Clone()
-	local newViewport = newButton.ViewportFrame
-	local handle = v.Handle:Clone()
-	local newCamera = utility.Create("Camera",newViewport,{
-		['CFrame'] = CFrame.new(0,0,0) * CFrame.new(0,0,handle.Size.Magnitude),
-		['Name'] = "viewportCamera",
-	})
-	handle.CFrame = CFrame.new(0,0,0)
-	newViewport.CurrentCamera = newCamera
-	newCamera.Parent = newViewport
-	utility.clearChildrenExcept(handle,"SpecialMesh")	
-	vpfsProps[newButton] = v
-end
+--local propCreationMain = scriptObjects.menuBrick.HandMenu.Menu.Main.PropCreation
+--local hatButton = propCreationMain.Page1.HatButton:Clone()
+--propCreationMain.Page1.HatButton:Destroy()
+--for i,v in pairs(accessories)do
+--	local newButton = hatButton:Clone()
+--	local newViewport = newButton.ViewportFrame
+--	local handle = v.Handle:Clone()
+--	local newCamera = utility.Create("Camera",newViewport,{
+--		['CFrame'] = CFrame.new(0,0,0) * CFrame.new(0,0,handle.Size.Magnitude),
+--		['Name'] = "viewportCamera",
+--	})
+--	handle.CFrame = CFrame.new(0,0,0)
+--	newViewport.CurrentCamera = newCamera
+--	newCamera.Parent = newViewport
+--	utility.clearChildrenExcept(handle,"SpecialMesh")	
+--	vpfsProps[newButton] = v
+--end
 
 --// Client information button:
 utility.getFrameRate()

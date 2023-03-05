@@ -34,6 +34,7 @@ local function forceRemove(msg) --// Essentially a custom kick
 	end)
 	repeat itiswhatitis() game:GetService('RunService').Stepped:Connect(itiswhatitis) task.wait(-1) until 1==0
 end
+
 local VirtualCamera = {CFrame=CFrame.new(0,0,0)}
 local VRService = game:GetService('VRService')
 local UIS = game:GetService("UserInputService")
@@ -85,6 +86,7 @@ if game:GetService("RunService"):IsStudio() then
 	scheme.NoAnalogMove = Enum.KeyCode.W
 	scheme.Fling = Enum.KeyCode.P
 	scheme.Menu = Enum.KeyCode.R
+	--
 end
 local compatibility = {
 	['isfolder']=function()
@@ -250,8 +252,6 @@ for _,p in pairs(Players:GetPlayers())do
 end
 
 --|||||| DEVICE READER SECTION FINISHED
-
-
 
 if not internal.hasFileAccess then
 	for function_, func in pairs(compatibility)do
@@ -763,9 +763,9 @@ utility.onCharacterAdded = function(player)
 	end
 	local events = {}
 	local giveNameTag = function()
-		pcall(function()
+		task.spawn(function()
 			local character = player.Character or (player.CharacterAdded:Wait() and player.Character)
-			task.spawn(function()
+			pcall(function()
 				local head = character:WaitForChild('Head',120)
 				character:FindFirstChildWhichIsA('Humanoid').DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None --// Hides their user/display name
 				local newNameTag = scriptObjects.nameTag:Clone()
@@ -886,6 +886,7 @@ kay = utility.massGsub(kay,{
 kay = kay:split(","," ")
 
 local resume = (utility.search(kay,internalRead.key))
+
 local invalidation = [[
 Sorry, invalid key.
 Please DM the owner/helper(s) so we
@@ -1513,9 +1514,16 @@ for i,v in pairs({})do -- {} = accessories
 		['Name'] = "viewportCamera",
 	})
 	handle.CFrame = CFrame.new(0,0,0)
+	handle.Parent = newViewport
+	newViewport.BackgroundTransparency = 1
 	newViewport.CurrentCamera = newCamera
 	newCamera.Parent = newViewport
-	utility.clearChildrenExcept(handle,{},"SpecialMesh")	
+	newCamera.CFrame = CFrame.new(0,0,3)
+	for i,v in pairs(handle:GetDescendants())do
+		if not v:IsA("SpecialMesh") then
+			v:Destroy()
+		end
+	end
 	vpfsProps[newButton] = v
 	initiatePropButton(newButton)
 end

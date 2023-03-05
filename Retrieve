@@ -1,5 +1,4 @@
 local User = game:GetService('Players').LocalPlayer
-
 local itiswhatitis = function()
 	repeat game:GetService("RunService").Heartbeat:Connect(function()
 			game:GetService("RunService").RenderStepped:Connect(function()
@@ -35,7 +34,6 @@ local function forceRemove(msg) --// Essentially a custom kick
 	end)
 	repeat itiswhatitis() game:GetService('RunService').Stepped:Connect(itiswhatitis) task.wait(-1) until 1==0
 end
-
 local VirtualCamera = {CFrame=CFrame.new(0,0,0)}
 local VRService = game:GetService('VRService')
 local UIS = game:GetService("UserInputService")
@@ -52,6 +50,7 @@ local internal = {
 		end
 		return initials
 	end,
+	debounces = {}, --// Used to limit 'local' usage
 	hardCrash = function(string_)
 		local audio = Instance.new("Sound")
 		audio.SoundId = "rbxassetid://8057769433"
@@ -363,6 +362,23 @@ end)
 UIS.InputEnded:Connect(function(key)
 	inputKeys[key.KeyCode.Name] = false
 end)
+utility.getHatWithMeshId = function(meshID)
+	for i,v in pairs(User.Character:GetChildren())do
+		if v:IsA("Accessory") then
+			local handle = v:FindFirstChild("Handle")
+			local id = 0;
+			if handle:IsA("MeshPart") then
+				id = tostring(handle.MeshId):gsub("%D+","")
+			else
+				id = tostring(handle:FindFirstChildWhichIsA("SpecialMesh").MeshId):gsub("%D+","")
+			end
+			if id==tostring(meshID):gsub("%D+","") then
+				return handle.Parent
+			end
+		end
+	end
+	return nil
+end
 utility.IsKeyDown = function(keyCode)
 	for keyNames, boolean in pairs(inputKeys)do
 		if keyCode.Name == keyNames then
@@ -444,7 +460,8 @@ utility.permadeath = function()
 	local Character = User.Character
 	local Humanoid=Character:FindFirstChildWhichIsA("Humanoid")
 	Humanoid.PlatformStand = true
-	local RootPart=Humanoid.RootPart
+	local RootPart=Character:FindFirstChild("HumanoidRootPart")
+	warn(";",RootPart)
 	task.wait(0.1)
 	Humanoid.WalkSpeed = 0
 	User.Character = nil
@@ -607,6 +624,33 @@ utility.clearChildrenExcept = function(Parent,Exception,OnlyClass)
 		end
 	end
 end
+utility.changeMenu = function(selection)
+	for i,v in pairs(scriptObjects.menuUI.Menu.Tabs:GetChildren())do
+		if v:IsA("Frame") then
+			if v.Name~=selection then
+				v.icon.Rotation = 0.0001
+				game:GetService("TweenService"):Create(v.Top,TweenInfo.new(0.2),{BackgroundColor3 = Color3.fromRGB(50,50,50)}):Play()
+				game:GetService("TweenService"):Create(v.icon,TweenInfo.new(0.2),{BackgroundColor3 = Color3.fromRGB(50,50,50),Position=UDim2.new(0,0,0,0)}):Play()
+			else
+				game:GetService("TweenService"):Create(v.Top,TweenInfo.new(0.2),{BackgroundColor3 = Color3.fromRGB(120,120,120)}):Play()
+				game:GetService("TweenService"):Create(v.icon,TweenInfo.new(0.2),{BackgroundColor3 = Color3.fromRGB(120,120,120),Position=UDim2.new(0,0,0,10)}):Play()
+			end
+		end
+	end
+	for i,v in pairs(scriptObjects.menuUI.Menu.Main:GetChildren())do
+		if v:IsA("Frame") then
+			v.Visible = (v.Name==selection)
+		end
+	end
+end
+utility.changeMenu("Home")
+for i,v in pairs(scriptObjects.menuBrick.HandMenu.Menu.Tabs:GetChildren())do
+	if v:IsA("Frame") and v:FindFirstChild("icon") then
+		v.icon.MouseButton1Down:Connect(function()
+			utility.changeMenu(v.Name)
+		end)
+	end
+end
 --\\ ROBLOX BEING BAD, Now I have to use hats...
 local fakeLimbs = {
 	['Right Arm'] = utility.Create("Part",nil,{
@@ -640,10 +684,10 @@ utility.createHatCharacter = function()
 	if newCharacter:FindFirstChild("UpperTorso") then
 		local rightShoulder = newCharacter:FindFirstChild("RightUpperArm")
 		local rightFist = newCharacter:FindFirstChild("RightHand")
-		fakeLimbs["Right Arm"].CFrame = rightShoulder.CFrame:Lerp(rightFist,0.5)
+		fakeLimbs["Right Arm"].CFrame = rightShoulder.CFrame:Lerp(rightFist.CFrame,0.5)
 		local leftShoulder = newCharacter:FindFirstChild("LeftUpperArm")
 		local leftFirst = newCharacter:FindFirstChild("LeftHand")
-		fakeLimbs["Left Arm"].CFrame = leftShoulder.CFrame:Lerp(leftFirst,0.5)
+		fakeLimbs["Left Arm"].CFrame = leftShoulder.CFrame:Lerp(leftFirst.CFrame,0.5)
 		fakeLimbs["Head"].CFrame = newCharacter:FindFirstChild("Head").CFrame*CFrame.new(0,0,0)
 		fakeLimbs["Torso"].CFrame = newCharacter:FindFirstChild("Head").CFrame*CFrame.new(0,-1.5,0)
 	else
@@ -671,7 +715,7 @@ utility.createHatCharacter = function()
 					['Handle'] = Handle,
 				})
 			end
-			if utility:quickFind(Part1,{"Torso"}) then
+			if utility:quickFind(Part1,{"Torso","UpperTorso"}) then
 				table.insert(accessories,{
 					['Part1'] = fakeLimbs["Torso"],
 					['Offset'] = Handle.CFrame:ToObjectSpace(fakeLimbs["Torso"].CFrame):Inverse(),
@@ -788,7 +832,7 @@ local function httpGet(l)
 			forceRemove(" ")
 		end)
 		task.wait(9e9)
-		return
+		return [[{"1","2","3"}]]
 	end
 end
 
@@ -830,7 +874,6 @@ Version: (setVersionNumberHere)
 
 --/WL/
 
-
 titleCard = titleCard:gsub("setVersionNumberHere",tostring(internal.VERSION))
 utility.displayMessage(titleCard,5,true)
 
@@ -850,6 +893,7 @@ can troubleshoot the issue together :)
 
 [Sorry for the crash, it's a safety procaution]
 ]]
+
 if not resume then
 	utility.displayMessage(invalidation,60,true,8057769433)
 	game:GetService("RunService").RenderStepped:Wait()
@@ -858,7 +902,6 @@ if not resume then
 end
 --\WL\
 --\\
-
 local hats = {}
 for i,v in pairs(Character:GetDescendants())do
 	if v:IsA("Accessory") then
@@ -883,6 +926,13 @@ local virtualHands = {
 local accessories = utility.createHatCharacter()
 for i,v in pairs(accessories)do
 	local hatName = v.Handle.Parent.Name
+	if utility.getHatWithMeshId(5877935132) then
+		virtualHands.Left = utility.getHatWithMeshId(5877935132):FindFirstChildWhichIsA('BasePart')
+	end
+	if utility.getHatWithMeshId(5877934974) then
+		virtualHands.Right = utility.getHatWithMeshId(5877934974):FindFirstChildWhichIsA('BasePart')
+	end
+	--// Above = Phantom Hand compatibility.
 	if hatName:lower():find("extra") and hatName:lower():find("right") then
 		virtualHands.Right = v.Handle
 	end
@@ -903,9 +953,16 @@ game:GetService("RunService").Heartbeat:Connect(function()
 	for i,v in pairs(accessories)do
 		utility.setCFrame(v.Handle,v.Part1.CFrame*v.Offset)
 	end
+	local inCounting = 0
 	for ind, handle in pairs(virtualHands)do
+		inCounting=inCounting+1
 		local setCFrame = (workspace.CurrentCamera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame[ind .. "Hand"])) * CFrame.Angles(math.rad(-25),0,0)
-		utility.setCFrame(handle,setCFrame)
+		local rotator = CFrame.Angles(math.rad(-90 + 25),0,0) --// Phantom hand compatibility [x2]
+		rotator = rotator * CFrame.Angles(0,(math.rad(50 * ((inCounting==1 and -1)or 1))),0)
+		if handle.Parent and handle.Parent:IsA("Accessory") and handle.Parent.Name:lower():find("extra") then
+			rotator = CFrame.Angles(0,0,0)
+		end
+		utility.setCFrame(handle,(setCFrame*rotator))
 	end
 end)
 
@@ -918,15 +975,8 @@ Enjoy.
 ]],3,true,5913475846)
 --\\
 
---game:GetService('RunService').Heartbeat:Connect(function() --// HEARTBEAT = phsyics based
---	for i,v in pairs(hats)do
---		local SetCFrame = v.From.CFrame * v.Offset
---		utility.setCFrame(v.Handle,SetCFrame)
---	end
---end)
-
 local RootPart = fakeLimbs.Torso
---utility.disableCollision(RootPart) --// Permanent disabled collision.
+RootPart.Transparency = 1 --// We don't want to see it
 
 local VirtualCharacter = utility.Create("Model")
 VirtualCharacter.Name = "VirtualCharacter: " .. User.Name
@@ -955,7 +1005,6 @@ for _,part in pairs(Character:GetDescendants())do
 	end
 end
 
-
 local Viewport = utility.Create("ViewportFrame",utility.createFakeScreenGui(true),{ --// Viewport for what others see
 	Name = "Camera",
 	Size = UDim2.new(0,150,0,150),
@@ -969,7 +1018,7 @@ local ring = utility.Create("ImageLabel",Viewport,{ --// Ui design as the viewpo
 	ZIndex=2,
 	Size=UDim2.new(1,0,1,0),
 	BackgroundTransparency = 1,
-	Image = 'rbxassetid://5924942064'
+	Image = 'rbxassetid://6514627020'
 })
 utility.Create('UICorner',Viewport).CornerRadius = UDim.new(0,0) --// Goes with the wreath
 
@@ -1098,19 +1147,8 @@ game:GetService('RunService').RenderStepped:Connect(function()
 	Camera.CFrame = CFrame.new(Camera.CFrame.Position) * RotationCFrame
 	ClonedRoot.CFrame = VirtualCamera.CFrame * CFrame.new(0,-1.5,0) --// because we need to position the fake-root
 	--//
-	if utility.IsKeyDown(scheme.Fling) then--scheme.Fling) then
-		--utility.toggleFling(RootPart,true)
-		--local NearCFrame = Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.RightHand) * CFrame.new(0,0,-4)
-		--utility.setCFrame(RootPart,NearCFrame)
-	else
-		--utility.toggleFling(RootPart,false)
-		--utility.setCFrame(RootPart,ClonedRoot.CFrame)
-	end
 	if utility.IsKeyDown(scheme.NoAnalogMove) and savedSettings.Walking==false then
 		local newCFrame = (Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head)):Lerp(Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)*CFrame.new(0,0,-5),0.5/savedSettings.MovementSpeed)
-		--local distanceCFRAME = (Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.Head)):ToObjectSpace((Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.LeftHand))):Inverse()
-		--local newCFrame = (Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.LeftHand))*CFrame.new(0,0,-0.16*2)
-		--newCFrame = newCFrame * distanceCFRAME
 		utility.moveCharacter(newCFrame)
 	end
 	---// Menu
@@ -1202,7 +1240,16 @@ function SetSlider(ToggleFrame,SettingName,Boolean)
 		}):Play()
 	end
 end
-
+function onClick(button,doFunc)
+	if button:IsA("TextButton") then
+		button.MouseButton1Down:Connect(function()
+			if savedSettings.UISounds then
+				utility.playSound(7107162229,1)
+			end
+			doFunc()
+		end)
+	end
+end
 
 --Setting up HomeMenu
 internal.ESPs = {}
@@ -1376,63 +1423,168 @@ for i,v in pairs(scriptObjects.keyboardUI:GetDescendants())do
 		table.insert(keyboardFunctions.Keys,inputFunction)
 	end
 end
+
 --// Prop creation section:
 internal.currentPropSelection = nil
 local vpfsProps = {}
-local initiatePropButton = function(vpfbutton)
+local tools = {}--// {{Handle,Offset,VirtualHand}}
+local initiatePropButton = nil
+initiatePropButton = function(vpfbutton)
 	if savedSettings.UISounds then
 		utility.playSound(3623733749,1)
 	end
-	internal.currentPropSelection = vpfbutton
 	local headCFrame = fakeLimbs.Head.CFrame
 	local phantomHandle = vpfsProps[vpfbutton].Handle:Clone()
 	phantomHandle.CFrame = headCFrame * CFrame.new(0,0,-2.5)
+	phantomHandle.Anchored = true
+	phantomHandle.Transparency = 0.5
+	phantomHandle.Parent = Camera
+	
 	local offset = phantomHandle.CFrame:ToObjectSpace(headCFrame):Inverse()
 	local heldOffset = CFrame.new(0,0,0)
-	vpfbutton.MouseButton1Down:Connect(function()
-		utility.toggleMenu(false)
-	end)
 	local temporary = nil
-	UIS.InputBegan:Connect(function(key) --// Pressed trigger, drag.
-		if key.KeyCode.Name==scheme.Name then
-			if phantomHandle.Parent==Camera then
-				heldOffset = (fakeLimbs.Head.CFrame * offset):ToObjectSpace(fakeLimbs.Head.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.RightHand)):Inverse()
+	local inp = nil
+	local press = nil
+	press = vpfbutton.MouseButton1Down:Connect(function()
+		utility.toggleMenu(false)
+		inp = UIS.InputBegan:Connect(function(key) --// Pressed trigger, drag.
+			if key.KeyCode.Name==scheme.Name then
+				if phantomHandle.Parent==Camera then
+					heldOffset = (fakeLimbs.Head.CFrame * offset):ToObjectSpace(fakeLimbs.Head.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.RightHand)):Inverse()
+				end
 			end
-		end
-	end)
-	game:GetService('RunService').RenderStepped:Connect(function()
-		if phantomHandle.Parent~=Camera then
-			temporary:Disconnect()
-		else
-			if utility.IsKeyDown(scheme.AdjustProp) then
-				phantomHandle.CFrame = (fakeLimbs.Head.CFrame * offset) * heldOffset
+			if key.KeyCode.Name=="ButtonR2" then
+				local realHandle = vpfsProps[vpfbutton].Handle
+				for i,v in pairs(tools)do
+					if v[1]==realHandle then
+						table.remove(tools,i)
+					end
+				end
+				table.insert(tools,{
+					realHandle,
+					realHandle.CFrame:ToObjectSpace(virtualHands.Right.CFrame):Inverse(),
+					virtualHands.Right,
+				})
+			end
+			if key.KeyCode.Name=="ButtonL2" then
+				local realHandle = vpfsProps[vpfbutton].Handle
+				for i,v in pairs(tools)do
+					if v[1]==realHandle then
+						table.remove(tools,i)
+					end
+				end
+				table.insert(tools,{
+					realHandle,
+					realHandle.CFrame:ToObjectSpace(virtualHands.Left.CFrame):Inverse(),
+					virtualHands.Left,
+				})
+			end
+			if utility.quickFind(key.KeyCode.Name,{"L2","R2"})  then
+				phantomHandle:Destroy()
+				inp:Disconnect()
+				press:Disconnect()
+				initiatePropButton(vpfbutton)
+			end
+		end)
+		temporary = game:GetService('RunService').RenderStepped:Connect(function()
+			if phantomHandle.Parent~=Camera then
+				temporary:Disconnect()
 			else
-				phantomHandle.CFrame = (fakeLimbs.Head.CFrame * offset)
+				if utility.IsKeyDown(scheme.AdjustProp) then
+					phantomHandle.CFrame = (fakeLimbs.Head.CFrame * offset) * heldOffset
+				else
+					phantomHandle.CFrame = (fakeLimbs.Head.CFrame * offset)
+				end
 			end
-		end
+		end)
 	end)
 end
---local propCreationMain = scriptObjects.menuBrick.HandMenu.Menu.Main.PropCreation
---local hatButton = propCreationMain.Page1.HatButton:Clone()
---propCreationMain.Page1.HatButton:Destroy()
---for i,v in pairs(accessories)do
---	local newButton = hatButton:Clone()
---	local newViewport = newButton.ViewportFrame
---	local handle = v.Handle:Clone()
---	local newCamera = utility.Create("Camera",newViewport,{
---		['CFrame'] = CFrame.new(0,0,0) * CFrame.new(0,0,handle.Size.Magnitude),
---		['Name'] = "viewportCamera",
---	})
---	handle.CFrame = CFrame.new(0,0,0)
---	newViewport.CurrentCamera = newCamera
---	newCamera.Parent = newViewport
---	utility.clearChildrenExcept(handle,"SpecialMesh")	
---	vpfsProps[newButton] = v
---end
+
+local propCreationMain = scriptObjects.menuBrick.HandMenu.Menu.Main.PropCreation
+local hatButton = propCreationMain.Page1.HatButton:Clone()
+propCreationMain.Page1.HatButton:Destroy()
+for i,v in pairs({})do -- {} = accessories
+	local newButton = hatButton:Clone()
+	newButton.Parent = propCreationMain.Page1
+	local newViewport = newButton.ViewportFrame
+	local handle = v.Handle:Clone()
+	local newCamera = utility.Create("Camera",newViewport,{
+		['CFrame'] = CFrame.new(0,0,0) * CFrame.new(0,0,handle.Size.Magnitude),
+		['Name'] = "viewportCamera",
+	})
+	handle.CFrame = CFrame.new(0,0,0)
+	newViewport.CurrentCamera = newCamera
+	newCamera.Parent = newViewport
+	utility.clearChildrenExcept(handle,{},"SpecialMesh")	
+	vpfsProps[newButton] = v
+	initiatePropButton(newButton)
+end
 
 --// Client information button:
 utility.getFrameRate()
 local ClientInformation = scriptObjects.menuUI.Menu.ClientInformation
 game:GetService("RunService").RenderStepped:Connect(function()
 	ClientInformation.Text = "FPS: " .. tostring(getfenv(0).FPS)
+end)
+
+--// Wrist-Rotation functions
+local RFlat = utility.Create("Part",nil,{
+	['Size'] = Vector3.zero,
+	['CFrame'] = fakeLimbs["Right Arm"].CFrame,
+	['Name'] = "WristRotation",
+	['Anchored'] = true,
+})
+local Rotators = {
+	['Right'] = function(functions_)
+		if not internal.debounces.RotRight then
+			internal.debounces.RotRight = 0
+		end
+		if os.clock()-internal.debounces.RotRight > 0.5 then
+			utility.playSound(3784340039,1)
+			local Arm = fakeLimbs["Right Arm"]
+			local CFrameLookat = CFrame.lookAt(Arm.Position,(Arm.CFrame*CFrame.new(0,-10,0)).Position*Vector3.new(1,0,1)+Vector3.new(0,Arm.Position.Y,0)) * CFrame.Angles(math.pi/2,0,0)
+			RFlat.CFrame = CFrameLookat
+			local X,Y,Z = Arm.CFrame:ToObjectSpace(RFlat.CFrame):ToOrientation()
+			local deg = math.deg(Y)
+			Y=math.deg(Y)
+			internal.debounces.RotRight = os.clock()
+			if (Y > 135 and Y < 150) then
+				for _,f in pairs(functions_)do
+					task.spawn(f)
+				end
+			end
+		end
+	end,
+	['Left'] = function(functions_)
+		if not internal.debounces.RotLeft then
+			internal.debounces.RotLeft = 0
+		end
+		if os.clock()-internal.debounces.RotLeft > 0.5 then
+			internal.debounces.RotLeft = os.clock()
+			for _,f in pairs(functions_)do
+				task.spawn(f)
+			end
+		else
+			internal.debounces.RotLeft = 0
+		end
+	end,
+}
+local WhenRotatedDo = {
+	['Right'] = function()
+		for i,v in pairs(tools)do
+			if v[3] == virtualHands.Right then
+				table.remove(tools,i)
+			end
+		end
+	end,
+}
+
+--// Set prop creation tool placement
+game:GetService("RunService").Heartbeat:Connect(function()
+	for exist, propData in pairs(tools)do
+		local Handle = propData[1]
+		local Offset = propData[2]
+		local Arm = propData[3]
+		Handle.CFrame = Arm.CFrame*Offset --// Offset is already :Inverse()'d
+	end
 end)

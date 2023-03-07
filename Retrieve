@@ -39,7 +39,7 @@ local VirtualCamera = {CFrame=CFrame.new(0,0,0)}
 local VRService = game:GetService('VRService')
 local UIS = game:GetService("UserInputService")
 local internal = {
-	VERSION = "2.1b",
+	VERSION = "2.101b",
 	strongIdentity = pcall(function() _ = game:GetService('CoreGui').FindFirstChild end), --// If you can access coregui, GREAT!! If you can't, it'll obviously be in studio testing mode... Maybe.
 	hasFileAccess = getfenv(0).writefile~=nil,
 	sourceFolder = "Brew\\",
@@ -642,6 +642,8 @@ utility.changeMenu = function(selection)
 			v.Visible = (v.Name==selection)
 		end
 	end
+	local newName = selection:gsub("%u"," %1")
+	scriptObjects.menuUI.Menu.Page.Text = tostring(newName)
 end
 utility.changeMenu("Home")
 for i,v in pairs(scriptObjects.menuBrick.HandMenu.Menu.Tabs:GetChildren())do
@@ -843,7 +845,7 @@ local savedSettings = {
 	PartESP = false,
 	PlayerESP = false,
 	UISounds = true,
-	Walking = true,
+	Walking = false,
 	--Settings→Page1:
 	CharacterViewport = true,
 	JoinLeave = true,
@@ -1149,8 +1151,10 @@ game:GetService('RunService').RenderStepped:Connect(function()
 	ClonedRoot.CFrame = VirtualCamera.CFrame * CFrame.new(0,-1.5,0) --// because we need to position the fake-root
 	--//
 	if utility.IsKeyDown(scheme.NoAnalogMove) and savedSettings.Walking==false then
-		local newCFrame = (Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head)):Lerp(Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)*CFrame.new(0,0,-5),0.5/savedSettings.MovementSpeed)
-		utility.moveCharacter(newCFrame)
+		local newCFrame = CFrame.new(0,0,0)--(Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head)):Lerp(Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)*CFrame.new(0,0,-5),0.5/savedSettings.MovementSpeed)
+		newCFrame = (Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)*CFrame.new(0,0,-1))
+		newCFrame = CFrame.lookAt(Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head).Position,newCFrame.Position)
+		utility.moveCharacter(newCFrame*CFrame.new(0,0,(-1*savedSettings.MovementSpeed)/16))
 	end
 	---// Menu
 	if scriptObjects.menuUI.Parent ~= nil then
@@ -1203,7 +1207,7 @@ function StartSlider(ToggleFrame,SettingName,Func)
 	local Left = UDim2.new(0.072,0,0.174,0)
 	local Right = UDim2.new((1-0.072) - 0.289,0,0.174,0)
 	local setFunc = function()
-		if savedSettings[SettingName]==true then
+		if savedSettings[SettingName]==false then
 			game:GetService("TweenService"):Create(SlideButton,TweenInfo.new(0.15),{
 				Position = Left,
 				BackgroundColor3 = Color3.fromRGB(255,95,95)
@@ -1315,7 +1319,7 @@ StartSlider(utility.getObjectInMenu("Walking"),"Walking")
 
 StartSlider(utility.getObjectInMenu("PlayerESP"),"PlayerESP",function(boolean)
 	if boolean then
-		for _,plr in pairs(game:GetService("Players"):GetPlayers())do
+		local onAdd=function(plr)
 			local v = plr.Character
 			local Highlight = utility.Create("Highlight")
 			Highlight.Name = tostring(v)
@@ -1327,11 +1331,16 @@ StartSlider(utility.getObjectInMenu("PlayerESP"),"PlayerESP",function(boolean)
 				Highlight.Parent = internal.ESPs.Holder
 			end
 			local added = plr.CharacterAdded:Connect(function(char)
-				Highlight.Adornee = char
+				task.delay(0.5,function()
+					Highlight.Adornee = char
+				end)
 			end)
 			internal.Connections.ESPs.Players[plr.Name] = added
 			table.insert(internal.ESPs.Players,Highlight)
 		end
+		for _,plr in pairs(game:GetService("Players"):GetPlayers())do
+		end
+		table.insert(internal.Connections.ESPs.Players,game:GetService("Players").PlayerAdded:Connect(onAdd))
 	else
 		for i,v in pairs(internal.ESPs.Players)do
 			v.Adornee = nil
@@ -1424,6 +1433,16 @@ for i,v in pairs(scriptObjects.keyboardUI:GetDescendants())do
 		table.insert(keyboardFunctions.Keys,inputFunction)
 	end
 end
+--// After scriptobjects were defined, create notification promp:
+scriptObjects.menuUI.Prompt.Hide.MouseButton1Down:Connect(function()
+	scriptObjects.menuUI.Prompt.Visible = false
+end)
+utility.notify = function(title,message,sfx)
+	scriptObjects.menuUI.Prompt.Title.Text = tostring(title)
+	scriptObjects.menuUI.Prompt.Message.Text = tostring(message)
+	scriptObjects.menuUI.Prompt.Visible = true
+	utility.playSound((sfx or 654933978),1)
+end
 
 --// Prop creation section:
 internal.currentPropSelection = nil
@@ -1440,7 +1459,7 @@ initiatePropButton = function(vpfbutton)
 	phantomHandle.Anchored = true
 	phantomHandle.Transparency = 0.5
 	phantomHandle.Parent = Camera
-	
+
 	local offset = phantomHandle.CFrame:ToObjectSpace(headCFrame):Inverse()
 	local heldOffset = CFrame.new(0,0,0)
 	local temporary = nil
@@ -1596,3 +1615,9 @@ game:GetService("RunService").Heartbeat:Connect(function()
 		Handle.CFrame = Arm.CFrame*Offset --// Offset is already :Inverse()'d
 	end
 end)
+
+--// Let them know
+utility.notify("Menu Update",[[
+Please excuse the menu, it's being worked on.
+I'm currently scripting in the rest of the menu, so please be patient.
+]])

@@ -1152,7 +1152,7 @@ game:GetService('RunService').RenderStepped:Connect(function()
 	--//
 	if utility.IsKeyDown(scheme.NoAnalogMove) and savedSettings.Walking==false then
 		local newCFrame = CFrame.new(0,0,0)--(Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head)):Lerp(Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)*CFrame.new(0,0,-5),0.5/savedSettings.MovementSpeed)
-		newCFrame = (Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)*CFrame.new(0,0,-1))
+		newCFrame = (Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)*CFrame.new(0,0,-10))
 		newCFrame = CFrame.lookAt(Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head).Position,newCFrame.Position)
 		utility.moveCharacter(newCFrame*CFrame.new(0,0,(-1*savedSettings.MovementSpeed)/16))
 	end

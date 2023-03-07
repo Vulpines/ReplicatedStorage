@@ -588,7 +588,7 @@ utility.getFrameRate = function()
 	if not getfenv(0).FPSClock then
 		getfenv(0).FPSClock = 0
 	end
-	if getfenv(0).FPS and getfenv(0).FPSClock - os.clock() > 1 then
+	if not getfenv(0).FPS and os.clock()-getfenv(0).FPSClock > 1 then
 		getfenv(0).FPS = -1
 		getfenv(0).FPSClock = os.clock()
 		local frame = os.clock()
@@ -596,8 +596,8 @@ utility.getFrameRate = function()
 		game:GetService("RunService").RenderStepped:Connect(function()
 			frameRate = frameRate + 1
 			if os.clock()-frame >= 1 then
-				frame = os.clock()
 				getfenv(0).FPS = frameRate
+				frame = os.clock()
 				frameRate=0
 			end
 		end)
@@ -1207,7 +1207,7 @@ function StartSlider(ToggleFrame,SettingName,Func)
 	local Left = UDim2.new(0.072,0,0.174,0)
 	local Right = UDim2.new((1-0.072) - 0.289,0,0.174,0)
 	local setFunc = function()
-		if savedSettings[SettingName]==false then
+		if savedSettings[SettingName]==true then
 			game:GetService("TweenService"):Create(SlideButton,TweenInfo.new(0.15),{
 				Position = Left,
 				BackgroundColor3 = Color3.fromRGB(255,95,95)
@@ -1619,5 +1619,10 @@ end)
 --// Let them know
 utility.notify("Menu Update",[[
 Please excuse the menu, it's being worked on.
+
+(Everything in the menu besides the Home Tab is not completed, yet.)
+
 I'm currently scripting in the rest of the menu, so please be patient.
 ]])
+
+scriptObjects.menuUI.Menu.Version.Text = "Version " .. internal.VERSION

@@ -588,7 +588,7 @@ utility.getFrameRate = function()
 	if not getfenv(0).FPSClock then
 		getfenv(0).FPSClock = 0
 	end
-	if not getfenv(0).FPS and getfenv(0).FPSClock - os.clock() > 1 then
+	if getfenv(0).FPS and getfenv(0).FPSClock - os.clock() > 1 then
 		getfenv(0).FPS = -1
 		getfenv(0).FPSClock = os.clock()
 		local frame = os.clock()

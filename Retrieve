@@ -40,7 +40,7 @@ local VRService = game:GetService('VRService')
 local UIS = game:GetService("UserInputService")
 local locals = {} --// Running out of local-room
 local internal = {
-	VERSION = "2.105b",
+	VERSION = "2.102b",
 	strongIdentity = pcall(function() _ = game:GetService('CoreGui').FindFirstChild end), --// If you can access coregui, GREAT!! If you can't, it'll obviously be in studio testing mode... Maybe.
 	hasFileAccess = getfenv(0).writefile~=nil,
 	sourceFolder = "Brew\\",

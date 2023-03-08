@@ -1689,6 +1689,9 @@ internal.RejectCharacterDeletions = "N/A"
 pcall(function()
 	local gethiddenproperty = gethiddenproperty or blank
 	internal.RejectCharacterDeletions=gethiddenproperty(workspace,"RejectCharacterDeletions")
+	if internal.RejectCharacterDeletions then
+		internal.RejectCharacterDeletions=internal.RejectCharacterDeletions.Name
+	end
 end)
 local ClientInformation = scriptObjects.menuUI.Menu.ClientInformation
 game:GetService("RunService").RenderStepped:Connect(function()

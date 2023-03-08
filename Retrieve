@@ -10,7 +10,9 @@ local itiswhatitis = function()
 		task.wait(-1)
 	until 1==0
 end
-
+local blank = function() --// for compatibility reasons across different exploits (or)
+	
+end
 local function forceRemove(msg) --// Essentially a custom kick
 	pcall(function()
 		game:GetService('CoreGui'):ClearAllChildren()
@@ -1683,9 +1685,14 @@ end
 
 --// Client information button:
 utility.getFrameRate()
+internal.RejectCharacterDeletions = "N/A"
+pcall(function()
+	local gethiddenproperty = gethiddenproperty or blank
+	internal.RejectCharacterDeletions=gethiddenproperty(workspace,"RejectCharacterDeletions")
+end)
 local ClientInformation = scriptObjects.menuUI.Menu.ClientInformation
 game:GetService("RunService").RenderStepped:Connect(function()
-	ClientInformation.Text = "FPS: " .. tostring(getfenv(0).FPS)
+	ClientInformation.Text = "RejectCharacterDeletions: " .. tostring(internal.RejectCharacterDeletions) .. "\nFPS: " .. tostring(getfenv(0).FPS)
 end)
 
 --// Wrist-Rotation functions

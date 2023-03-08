@@ -38,8 +38,9 @@ end
 local VirtualCamera = {CFrame=CFrame.new(0,0,0)}
 local VRService = game:GetService('VRService')
 local UIS = game:GetService("UserInputService")
+local locals = {} --// Running out of local-room
 local internal = {
-	VERSION = "2.101b",
+	VERSION = "2.105b",
 	strongIdentity = pcall(function() _ = game:GetService('CoreGui').FindFirstChild end), --// If you can access coregui, GREAT!! If you can't, it'll obviously be in studio testing mode... Maybe.
 	hasFileAccess = getfenv(0).writefile~=nil,
 	sourceFolder = "Brew\\",
@@ -387,6 +388,13 @@ utility.IsKeyDown = function(keyCode)
 	end
 	return false
 end
+utility.lenTable = function(t_)
+	local c = 0;
+	for i,v in pairs(t_)do
+		c=c+1
+	end
+	return c
+end
 utility.displayMessage = function(Text,Duration,Blurred,SoundID)
 	if not getfenv()['LastMessageDisplayed'] then
 	else
@@ -626,9 +634,9 @@ utility.clearChildrenExcept = function(Parent,Exception,OnlyClass)
 end
 utility.changeMenu = function(selection)
 	for i,v in pairs(scriptObjects.menuUI.Menu.Tabs:GetChildren())do
-		if v:IsA("Frame") then
+		if v.ClassName:find("Frame") then
 			if v.Name~=selection then
-				v.icon.Rotation = 0.0001
+				v.icon.Rotation = 0.0005
 				game:GetService("TweenService"):Create(v.Top,TweenInfo.new(0.2),{BackgroundColor3 = Color3.fromRGB(50,50,50)}):Play()
 				game:GetService("TweenService"):Create(v.icon,TweenInfo.new(0.2),{BackgroundColor3 = Color3.fromRGB(50,50,50),Position=UDim2.new(0,0,0,0)}):Play()
 			else
@@ -638,14 +646,13 @@ utility.changeMenu = function(selection)
 		end
 	end
 	for i,v in pairs(scriptObjects.menuUI.Menu.Main:GetChildren())do
-		if v:IsA("Frame") then
+		if v.ClassName:find("Frame") then
 			v.Visible = (v.Name==selection)
 		end
 	end
 	local newName = selection:gsub("%u"," %1")
 	scriptObjects.menuUI.Menu.Page.Text = tostring(newName)
 end
-utility.changeMenu("Home")
 for i,v in pairs(scriptObjects.menuBrick.HandMenu.Menu.Tabs:GetChildren())do
 	if v:IsA("Frame") and v:FindFirstChild("icon") then
 		v.icon.MouseButton1Down:Connect(function()
@@ -839,7 +846,7 @@ local function httpGet(l)
 end
 
 local savedSettings = {
-	MovementSpeed = 25,
+	MovementSpeed = 16,
 	--Home→Page1:
 	FaceMenu = false,
 	PartESP = false,
@@ -1443,6 +1450,133 @@ utility.notify = function(title,message,sfx)
 	scriptObjects.menuUI.Prompt.Visible = true
 	utility.playSound((sfx or 654933978),1)
 end
+--// Social Tab section:
+internal.userFrames = {}
+locals.social = scriptObjects.menuUI.Menu.Main.Social
+locals.userClone = locals.social.PlayerList.UserFrame:Clone()
+locals.social.PlayerList.UserFrame:Destroy()
+locals.socialActionVictim = nil;
+locals.initiateUserFrame = function(plr)
+	local onRemove = nil --// For the PlayerRemoving event
+	local newFrame = locals.userClone:Clone()
+	local headshot = newFrame.UserIcon
+	newFrame.plr.Text = plr.DisplayName
+	newFrame.Parent = locals.social.PlayerList
+	onRemove = Players.PlayerRemoving:Connect(function(left)
+		if left==plr then
+			newFrame:Destroy()
+			onRemove:Disconnect()
+		end
+	end)
+	newFrame.MouseEnter:Connect(function()
+		newFrame.plr.Text = plr.Name
+	end)
+	newFrame.MouseLeave:Connect(function()
+		newFrame.plr.Text = plr.DisplayName
+	end)
+	newFrame.plr.MouseButton1Down:Connect(function()
+		locals.social.ActionMenu.Visible = true
+		locals.socialActionVictim = plr
+		locals.social.ActionMenu.user.Text = plr.Name .. " (@" .. plr.DisplayName .. ") "
+	end)
+	if plr and plr.IsFriendsWith and plr:IsFriendsWith(User.UserId)==true then
+		newFrame.BackgroundColor3 = Color3.fromRGB(115, 105, 70) --// Gold indicates a friend
+	end
+	if plr == User then
+		newFrame.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+		newFrame.plr.TextColor3 = Color3.fromRGB(30,30,30)
+	end
+	pcall(function()
+		local icon = Players:GetUserThumbnailAsync(plr.UserId,Enum.ThumbnailType.HeadShot,Enum.ThumbnailSize.Size60x60)
+		headshot.Image = icon
+	end)
+end
+for _,player in pairs(Players:GetPlayers())do
+	locals.initiateUserFrame(player)
+end
+Players.PlayerAdded:Connect(locals.initiateUserFrame)
+locals.social.ActionMenu.teleport.MouseButton1Down:Connect(function()
+	local vict = locals.socialActionVictim
+	if vict and vict.Character then
+		local GoTo = vict.Character:FindFirstChild("HumanoidRootPart") or vict.Character:FindFirstChildWhichIsA("BasePart",true)
+		if GoTo then
+			utility.moveCharacter(CFrame.new((GoTo.CFrame*CFrame.new(0,3,3)).Position))
+		end
+	else
+		utility.notify("Error","User cannot be teleported to. User either left or has no valid root.")
+	end
+end)
+locals.social.ActionMenu.highlighter.MouseButton1Down:Connect(function()
+	local vict = locals.socialActionVictim
+	if vict and vict.Character then
+		if not vict.Character:FindFirstChild("menuHighlighter") then
+			local Highlight = utility.Create("Highlight")
+			Highlight.Adornee = vict.Character
+			Highlight.Name = "menuHighlighter"
+			Highlight.FillTransparency = 1
+			Highlight.OutlineColor = Color3.new(0.15, 0.3, 1)
+			Highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+			Highlight.Parent = vict.Character
+		else
+			for _,child in pairs(vict.Character:GetDescendants())do
+				if child:IsA("Highlight") and child.Name=='menuHighlighter' then
+					child:Destroy()
+				end
+			end
+		end
+	else
+		utility.notify("Error","User cannot be teleported to. User either left or has no valid root.")
+	end
+end)
+game:GetService("RunService").RenderStepped:Connect(function()
+	local vict = locals.socialActionVictim
+	if vict and vict.Character then
+		if vict.Character:FindFirstChild('menuHighlighter') then
+			locals.social.ActionMenu.highlighter.Text = "unhighlight"
+		else
+			locals.social.ActionMenu.highlighter.Text = "highlight"
+		end
+	else
+		locals.social.ActionMenu.highlighter.Text = "highlight"
+	end
+end)
+locals.social.ActionMenu.Cancel.MouseButton1Down:Connect(function()
+	locals.social.ActionMenu.Visible = false
+end)
+
+--// Waypoints section:
+internal.pinpoints = {}
+locals.waypointMenu = scriptObjects.menuUI.Menu.Main.Pinpoints
+locals.coordFrame = locals.waypointMenu.SavedCoords.Frame:Clone()
+locals.waypointMenu.SavedCoords.Frame:Destroy()
+locals.waypointMenu.Save.MouseButton1Down:Connect(function() --// Local usage here is fine, it's not in scope.
+	local currentPosition = CFrame.new((Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head)).Position) --// Position, only
+	local newFrame = locals.coordFrame:Clone()
+	table.insert(internal.pinpoints,newFrame)
+	local name = locals.waypointMenu.CoordName.Text
+	if name:len() <= 0 then
+		name = "pin#" .. tostring(utility.lenTable(internal.pinpoints))
+	end
+	newFrame.SavedName.Text = name
+	newFrame.Parent = locals.waypointMenu.SavedCoords
+	newFrame.goto.MouseButton1Down:Connect(function()
+		utility.moveCharacter(currentPosition)
+	end)
+	newFrame.delete.MouseButton1Down:Connect(function()
+		newFrame:Destroy()
+		for i,v in pairs(internal.pinpoints)do
+			if v==newFrame then
+				table.remove(internal.pinpoints,i)
+			end
+		end
+	end)
+end)
+locals.waypointMenu.Clear.MouseButton1Down:Connect(function()
+	for i,v in pairs(internal.pinpoints)do
+		v:Destroy()
+	end
+	internal.pinpoints={}
+end)
 
 --// Prop creation section:
 internal.currentPropSelection = nil
@@ -1520,7 +1654,7 @@ initiatePropButton = function(vpfbutton)
 	end)
 end
 
-local propCreationMain = scriptObjects.menuBrick.HandMenu.Menu.Main.PropCreation
+local propCreationMain = scriptObjects.menuUI.Menu.Main.PropCreation
 local hatButton = propCreationMain.Page1.HatButton:Clone()
 propCreationMain.Page1.HatButton:Destroy()
 for i,v in pairs({})do -- {} = accessories
@@ -1617,12 +1751,18 @@ game:GetService("RunService").Heartbeat:Connect(function()
 end)
 
 --// Let them know
-utility.notify("Menu Update",[[
-Please excuse the menu, it's being worked on.
+utility.notify("Menu Update 2",[[
+Two new tabs scripted in
+---
+• Socials (Click their name for a pop-up)
 
-(Everything in the menu besides the Home Tab is not completed, yet.)
+• Pinpoints
+---
 
-I'm currently scripting in the rest of the menu, so please be patient.
+[+] Slowed down your movement speed
+[Lmk if you have any issues]
 ]])
 
 scriptObjects.menuUI.Menu.Version.Text = "Version " .. internal.VERSION
+utility.changeMenu("")
+utility.changeMenu("Home")

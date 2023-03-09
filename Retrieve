@@ -42,7 +42,7 @@ local VRService = game:GetService('VRService')
 local UIS = game:GetService("UserInputService")
 local locals = {} --// Running out of local-room
 local internal = {
-	VERSION = "2.102b",
+	VERSION = "2.103b",
 	strongIdentity = pcall(function() _ = game:GetService('CoreGui').FindFirstChild end), --// If you can access coregui, GREAT!! If you can't, it'll obviously be in studio testing mode... Maybe.
 	hasFileAccess = getfenv(0).writefile~=nil,
 	sourceFolder = "Brew\\",
@@ -892,14 +892,14 @@ titleCard = titleCard:gsub("setVersionNumberHere",tostring(internal.VERSION))
 utility.displayMessage(titleCard,5,true)
 
 local server = "RWtKcU94"
-local kay = dec(httpGet("https://pastebin.com/raw/" .. dec(server,-1)))
+local kay = ""--dec(httpGet("https://pastebin.com/raw/" .. dec(server,-1)))
 local slw = {}
 kay = utility.massGsub(kay,{
 	"}","{",'"'
 })
 kay = kay:split(","," ")
 
-local resume = (utility.search(kay,internalRead.key))
+local resume = true--(utility.search(kay,internalRead.key))
 
 local invalidation = [[
 Sorry, invalid key.
@@ -1175,7 +1175,7 @@ game:GetService('RunService').RenderStepped:Connect(function()
 		local newCFrame = CFrame.new(0,0,0)--(Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head)):Lerp(Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)*CFrame.new(0,0,-5),0.5/savedSettings.MovementSpeed)
 		newCFrame = (Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)*CFrame.new(0,0,-10))
 		newCFrame = CFrame.lookAt(Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head).Position,newCFrame.Position)
-		utility.moveCharacter(newCFrame*CFrame.new(0,0,(-1*savedSettings.MovementSpeed)/35.05)/2)
+		utility.moveCharacter(newCFrame*CFrame.new(0,0,((-1*savedSettings.MovementSpeed)/35.05)/2))
 	end
 	---// Menu
 	if scriptObjects.menuUI.Parent ~= nil then

@@ -910,7 +910,7 @@ can troubleshoot the issue together :)
 ]]
 
 if not resume then
-	utility.displayMessage(invalidation,60,true,8057769433)
+	utility.displayMessage(invalidation,60,true,138144581)
 	game:GetService("RunService").RenderStepped:Wait()
 	forceRemove()
 	return
@@ -987,7 +987,7 @@ end)
 utility.displayMessage([[
 Whitelist was approved :)
 Enjoy.
-]],3,true,5913475846)
+]],3,true,6647897822)
 --\\
 
 local RootPart = fakeLimbs.Torso

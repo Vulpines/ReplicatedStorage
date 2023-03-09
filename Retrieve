@@ -42,7 +42,7 @@ local VRService = game:GetService('VRService')
 local UIS = game:GetService("UserInputService")
 local locals = {} --// Running out of local-room
 local internal = {
-	VERSION = "2.102b",
+	VERSION = "2.103b",
 	strongIdentity = pcall(function() _ = game:GetService('CoreGui').FindFirstChild end), --// If you can access coregui, GREAT!! If you can't, it'll obviously be in studio testing mode... Maybe.
 	hasFileAccess = getfenv(0).writefile~=nil,
 	sourceFolder = "Brew\\",
@@ -84,6 +84,9 @@ local scheme = {
 	Fling = Enum.KeyCode.ButtonR2,
 	Menu = Enum.KeyCode.ButtonL1,
 	AdjustProp = Enum.KeyCode.ButtonR1,
+}
+local indexScheme = {
+	Menu = Enum.KeyCode.ButtonY
 }
 if game:GetService("RunService"):IsStudio() then
 	scheme.NoAnalogMove = Enum.KeyCode.W
@@ -848,7 +851,7 @@ local function httpGet(l)
 end
 
 local savedSettings = {
-	MovementSpeed = 16,
+	MovementSpeed = 35,
 	--Home→Page1:
 	FaceMenu = false,
 	PartESP = false,
@@ -1142,8 +1145,17 @@ game:GetService('RunService').RenderStepped:Connect(function()
 	local Offset = Camera.CFrame:ToObjectSpace(CFrame.new(VirtualCamera.CFrame.Position))
 	if ((math.abs(AnalogSettings.LeftX) > 0.1 or math.abs(AnalogSettings.LeftY) >0.1)) and savedSettings.Walking == true then
 		local Direction = (CFrame.new(VirtualCamera.CFrame.Position) * RotationCFrame) * CFrame.new((AnalogSettings.LeftX/10)/16 * savedSettings.MovementSpeed,0,(AnalogSettings.LeftY/-10)/16 * savedSettings.MovementSpeed)
+		local massIgnore = workspace:GetPartBoundsInRadius((Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head)).Position,100,OverlapParams.new({['MaxParts']=300}))
+		local unpackIgnore = {}
+		for i,v in pairs(massIgnore)do
+			if v.Parent:IsA("Model") and v.Parent:FindFirstChildWhichIsA('Humanoid') and v.Parent ~= User.Character then
+				if not table.find(unpackIgnore,v.Parent) then
+					table.insert(unpackIgnore,v.Parent)
+				end
+			end
+		end
 		local DownRay = Ray.new(Direction.Position,Vector3.new(0,-100,0))
-		local Part,Position = workspace:FindPartOnRay(DownRay,VirtualCharacter,true,true)
+		local Part,Position = workspace:FindPartOnRayWithIgnoreList(DownRay,{VirtualCharacter,table.unpack(unpackIgnore)},true,true)
 		if Part then
 			local FutureCFrame = CFrame.new(Position+Vector3.new(0,4.5,0)) * Offset:Inverse()
 			local Within = workspace:GetPartBoundsInBox(FutureCFrame,Vector3.new(1,1,1),OverlapParams.new({['MaxParts']=1000}))
@@ -1163,7 +1175,7 @@ game:GetService('RunService').RenderStepped:Connect(function()
 		local newCFrame = CFrame.new(0,0,0)--(Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head)):Lerp(Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)*CFrame.new(0,0,-5),0.5/savedSettings.MovementSpeed)
 		newCFrame = (Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)*CFrame.new(0,0,-10))
 		newCFrame = CFrame.lookAt(Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head).Position,newCFrame.Position)
-		utility.moveCharacter(newCFrame*CFrame.new(0,0,(-1*savedSettings.MovementSpeed)/16))
+		utility.moveCharacter(newCFrame*CFrame.new(0,0,(-1*savedSettings.MovementSpeed)/35)/2)
 	end
 	---// Menu
 	if scriptObjects.menuUI.Parent ~= nil then
@@ -1205,7 +1217,7 @@ utility.toggleMenu = function(bool)
 	menuDebounce = os.clock()
 end
 UIS.InputBegan:Connect(function(key)
-	if key.KeyCode==scheme.Menu and os.clock()-menuDebounce > 0.2 then
+	if (key.KeyCode==scheme.Menu or key.KeyCode==indexScheme.Menu) and os.clock()-menuDebounce > 0.2 then
 		utility.toggleMenu(internal.menuOpen)
 	end
 end)

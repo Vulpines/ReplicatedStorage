@@ -892,14 +892,14 @@ titleCard = titleCard:gsub("setVersionNumberHere",tostring(internal.VERSION))
 utility.displayMessage(titleCard,5,true)
 
 local server = "RWtKcU94"
-local kay = ""--dec(httpGet("https://pastebin.com/raw/" .. dec(server,-1)))
+local kay = dec(httpGet("https://pastebin.com/raw/" .. dec(server,-1)))
 local slw = {}
 kay = utility.massGsub(kay,{
 	"}","{",'"'
 })
 kay = kay:split(","," ")
 
-local resume = true--(utility.search(kay,internalRead.key))
+local resume = (utility.search(kay,internalRead.key))
 
 local invalidation = [[
 Sorry, invalid key.

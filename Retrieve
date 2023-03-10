@@ -1,4 +1,94 @@
 local User = game:GetService('Players').LocalPlayer
+
+initial = {
+	Camera = workspace.CurrentCamera,
+	Brick = Instance.new("Part"),
+	Highlight = Instance.new("Highlight"),
+	LoadText = [[Press and click trigger to load]],
+	OnHover = Instance.new("BillboardGui"),
+	OnRead = Instance.new("TextLabel"),
+	Loaded = false,
+	UIS = game:GetService("UserInputService"), --// This whole initiate idea was implementated way later
+	propChange = function(obj,properties)
+		for i,v in pairs(properties)do
+			obj[i]=v
+		end
+	end,
+	ValidTriggers = {
+		Enum.KeyCode.ButtonL1,
+		Enum.KeyCode.ButtonR1,
+		Enum.KeyCode.ButtonL2,
+		Enum.KeyCode.ButtonR2,
+		Enum.KeyCode.P,
+	},
+	YieldedLoop = nil, --// RenderStep loop to later disconnect.
+}
+
+initial.propChange(initial.OnHover,{
+	Adornee=initial.Brick,
+	Size =  UDim2.new(3,0,0.5,0),
+	AlwaysOnTop = true,
+	StudsOffset = Vector3.new(0,0.5,0),
+	Parent = initial.Brick
+})
+initial.propChange(initial.OnRead,{
+	Text = initial.LoadText,
+	BackgroundTransparency = 1,
+	TextColor3 = Color3.new(0.25,0.5,1),
+	TextStrokeTransparency = 0.8,
+	Size = UDim2.new(1,0,1,0),
+	Rotation = 0.005,
+	TextScaled = true,
+	['Font'] = Enum.Font.Code,
+	Parent = initial.OnHover
+})
+
+initial.propChange(initial.Brick,{
+	Size = Vector3.one/2,
+	Name = "InitBrick",
+	Anchored = true,
+	CanCollide = false,
+	Color = Color3.new(1,1,1),
+	Material = Enum.Material.SmoothPlastic,
+	Parent = initial.Camera,
+})
+initial.propChange(initial.Highlight,{
+	DepthMode = Enum.HighlightDepthMode.AlwaysOnTop,
+	FillTransparency = 1,
+	OutlineColor = Color3.new(0,0.5,1),
+	OutlineTransparency = 0,
+	Adornee = initial.Brick,
+	Enabled = false,
+	Parent = initial.Brick,
+})
+initial.YieldedLoop = game:GetService("RunService").RenderStepped:Connect(function()
+	local headCFrame = initial.Camera.CFrame*game:GetService('VRService'):GetUserCFrame(Enum.UserCFrame.Head)
+	initial.Brick.CFrame = CFrame.new(( headCFrame*CFrame.new(0.5,-0.25,-2) ).Position)
+	--
+	local L = initial.Camera.CFrame*game:GetService('VRService'):GetUserCFrame(Enum.UserCFrame.LeftHand)
+	local R = initial.Camera.CFrame*game:GetService('VRService'):GetUserCFrame(Enum.UserCFrame.RightHand)
+	L = (initial.Brick.Position-L.Position).Magnitude
+	R = (initial.Brick.Position-R.Position).Magnitude
+	initial.OnHover.Enabled = false
+	initial.Highlight.Enabled = false
+	if L<0.5/2 or R<0.5/2 or game:GetService('RunService'):IsStudio() then --// Either hand is inside the button, now
+		initial.OnHover.Enabled = true
+		initial.Highlight.Enabled = true
+		for _,key in pairs(initial.ValidTriggers)do
+			if initial.UIS:IsKeyDown(key) then --// key is already a keycode variable
+				initial.OnHover:Destroy()
+				initial.Highlight:Destroy()
+				initial.Brick:Destroy()
+				initial.Loaded = true
+				initial.YieldedLoop:Disconnect() --// Finally, stops the load yield.
+			end
+		end
+	end
+end)
+
+repeat game:GetService('RunService').RenderStepped:Wait() until User.Character and initial.Loaded==true
+
+--// Begin main-main scripting
 local itiswhatitis = function()
 	repeat game:GetService("RunService").Heartbeat:Connect(function()
 			game:GetService("RunService").RenderStepped:Connect(function()
@@ -41,7 +131,19 @@ local VRService = game:GetService('VRService')
 local UIS = game:GetService("UserInputService")
 local locals = {} --// Running out of local-room
 local internal = {
-	VERSION = "2.104b",
+	VERSION = "2.105b",
+	gamesList = {
+		{6708206173,"Rate My Avatar"},
+		{7115420363,"The Booth Plaza"},
+		{155615604,"Prison Life"},
+		{189707,"Natural Disaster"},
+		{192800,"Work at a Pizza Place"},
+		{47324,"Sword Fights"},
+		{12109643,"Fencing","A lot of ego-jerks"},
+		{1662219031,"Life in paradise (old)"},
+		{4483381587,"A Literal Baseplate"},
+		{2788229376,"Da Hood","(Da-Hood has weird protection, so there's a 70% chance you'll need to reload until it works.)"},
+	},
 	strongIdentity = pcall(function() _ = game:GetService('CoreGui').FindFirstChild end), --// If you can access coregui, GREAT!! If you can't, it'll obviously be in studio testing mode... Maybe.
 	hasFileAccess = getfenv(0).writefile~=nil,
 	sourceFolder = "Brew\\",
@@ -310,7 +412,6 @@ local lib = nil
 
 if not internal.strongIdentity then
 	lib = game:GetService('ReplicatedStorage'):WaitForChild('Lib',120):Clone()
-	task.wait(2)
 else
 	lib = game:GetObjects("rbxassetid://12342582416")[1]:Clone()
 end
@@ -1527,6 +1628,29 @@ utility.notify = function(title,message,sfx)
 	scriptObjects.menuUI.Prompt.Visible = true
 	utility.playSound((sfx or 654933978),1)
 end
+--// Game Tab section:
+locals.gameTab = scriptObjects.menuUI.Menu.Main.Teleports
+locals.gameButton = locals.gameTab.GameTab:Clone()
+locals.gameTab.GameTab:Destroy()
+locals.createGameTab = function(title, gameDesc, placeId)
+	local newTab = locals.gameButton:Clone()
+	newTab.Title.Text = title or "[undefined]"
+	newTab.Content.Text = gameDesc or "Description"
+	newTab.Use.MouseButton1Down:Connect(function()
+		internal.blinded = true --// This saves you all
+		task.wait(0.1) --// Motion sickness from freezing
+		pcall(function()
+			game:GetService("TeleportService"):Teleport(placeId,User)
+		end)
+		task.wait(1.5)
+		internal.blinded = false
+	end)
+	newTab.Parent = locals.gameTab
+end
+for i,v in pairs(internal.gamesList)do
+	locals.createGameTab(v[2],v[3],v[1])
+end
+
 --// Settings Tab section:
 locals.currentSettingPage = 1   +1
 locals.settingMain = scriptObjects.menuUI.Menu.Main.Settings
@@ -1939,23 +2063,23 @@ end)
 --// Let them know
 utility.notify("Menu Update 2",[[
 
-* Please recenter yourself before saying you're moving weird.
-
-(Added settings tab + automatic sliders)
-(Added personal space)
-(Added toggle to character viewport)
-(Added invisibility button)
+Please recenter yourself before saying you're moving weird.
 
 ]])
 
 scriptObjects.menuUI.Menu.Version.Text = "Version " .. internal.VERSION
+
+locals.notified = {} --// One time notification when opening a new tab
 utility.changeMenu("")
 utility.changeMenu("Home")
-locals.notifiedSettings = false
 internal.menuChanged.Event:Connect(function(menu)
-	if menu=='Settings' and locals.notifiedSettings==false then
-		locals.notifiedSettings = true
-		utility.notify("Real quick:","Not every setting is complete. So if some sliders are not working, you know why.",5521959695)
+	if not table.find(locals.notified,menu) then
+		table.insert(locals.notified,menu)
+		if menu=='Settings' then
+			utility.notify("Real quick:","Not every setting is complete. So if some sliders are not working, you know why.",5521959695)
+		elseif menu=="Teleports" then
+			utility.notify("Disclaimer","If you have any games that work, send them in the discord if you want :)\n\n(Not all games support TeleportService, so if you can't teleport from your current game to a new one, you know why.)")
+		end
 	end
 end)
 --

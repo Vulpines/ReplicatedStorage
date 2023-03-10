@@ -63,7 +63,7 @@ initial.propChange(initial.Highlight,{
 })
 initial.YieldedLoop = game:GetService("RunService").RenderStepped:Connect(function()
 	local headCFrame = initial.Camera.CFrame*game:GetService('VRService'):GetUserCFrame(Enum.UserCFrame.Head)
-	initial.Brick.CFrame = CFrame.new(( headCFrame*CFrame.new(0.5,-0.25,-2) ).Position)
+	initial.Brick.CFrame = CFrame.new(( headCFrame*CFrame.new(0.5,-0.25,-0.5) ).Position)
 	--
 	local L = initial.Camera.CFrame*game:GetService('VRService'):GetUserCFrame(Enum.UserCFrame.LeftHand)
 	local R = initial.Camera.CFrame*game:GetService('VRService'):GetUserCFrame(Enum.UserCFrame.RightHand)

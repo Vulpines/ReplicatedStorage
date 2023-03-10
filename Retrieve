@@ -11,7 +11,6 @@ local itiswhatitis = function()
 	until 1==0
 end
 local blank = function() --// for compatibility reasons across different exploits (or)
-	
 end
 local function forceRemove(msg) --// Essentially a custom kick
 	pcall(function()
@@ -42,7 +41,7 @@ local VRService = game:GetService('VRService')
 local UIS = game:GetService("UserInputService")
 local locals = {} --// Running out of local-room
 local internal = {
-	VERSION = "2.103b",
+	VERSION = "2.104b",
 	strongIdentity = pcall(function() _ = game:GetService('CoreGui').FindFirstChild end), --// If you can access coregui, GREAT!! If you can't, it'll obviously be in studio testing mode... Maybe.
 	hasFileAccess = getfenv(0).writefile~=nil,
 	sourceFolder = "Brew\\",
@@ -54,6 +53,7 @@ local internal = {
 		end
 		return initials
 	end,
+	blinded = false,
 	debounces = {}, --// Used to limit 'local' usage
 	hardCrash = function(string_)
 		local audio = Instance.new("Sound")
@@ -92,6 +92,13 @@ if game:GetService("RunService"):IsStudio() then
 	scheme.NoAnalogMove = Enum.KeyCode.W
 	scheme.Fling = Enum.KeyCode.P
 	scheme.Menu = Enum.KeyCode.R
+	UIS.InputBegan:Connect(function(key)
+		if key.KeyCode==Enum.KeyCode.T then
+			workspace.CurrentCamera.FieldOfView = 9e9
+		elseif key.KeyCode==Enum.KeyCode.Y then
+			workspace.CurrentCamera.FieldOfView = 70
+		end
+	end)
 	--
 end
 local compatibility = {
@@ -135,6 +142,18 @@ local compatibility = {
 }
 
 if internal.hasFileAccess then
+	pcall(function() --// If I screwed something up, it won't show up in the output as an error...
+		if not isfolder("Brew") then
+			makefolder("Brew")
+			if not isfile("BrewKey.bv") then
+				return forceRemove("You don't have any whitelist under your workspace folder.\nPlease contact a helper in the discord.")
+			else
+				contents = readfile("BrewKey.bv")
+				delfile("BrewKey.bv")
+				writefile(internal.sourceFolder .. "BrewKey.bv",contents)
+			end
+		end
+	end)
 	local newKey = readfile(internal.sourceFolder.."BrewKey.bv")
 	if newKey == nil or newKey == "" then
 		newKey = _G.BrewKey
@@ -470,16 +489,16 @@ utility.playSound = function(ID,Pitch)
 	end)
 end
 utility.permadeath = function()
+	internal.blinded = true
 	local Character = User.Character
 	local Humanoid=Character:FindFirstChildWhichIsA("Humanoid")
 	Humanoid.PlatformStand = true
 	local RootPart=Character:FindFirstChild("HumanoidRootPart")
-	warn(";",RootPart)
 	task.wait(0.1)
 	Humanoid.WalkSpeed = 0
 	User.Character = nil
 	User.Character = Character
-	RootPart.Anchored=false
+	RootPart.Anchored = false
 	Humanoid.PlatformStand = true --// To stiffen up
 	local hats = {}
 	for i,v in pairs(RootPart.Parent:GetChildren())do
@@ -493,27 +512,35 @@ utility.permadeath = function()
 	workspace.CurrentCamera.CameraSubject = RootPart.Parent:FindFirstChildWhichIsA('Accessory'):FindFirstChild('Handle')
 	local StartTime=os.clock()
 	local x = RootPart.Position.X
+	local y = RootPart.Position.Y
 	local z = RootPart.Position.Z
 	repeat
-		task.wait(-1)
-		RootPart.CFrame = CFrame.new(x+10,workspace.FallenPartsDestroyHeight + 10,z+10)
-		RootPart.Velocity = Vector3.new(0,0,0)
+		RootPart.CFrame = CFrame.new(x,y-30,z)
+		RootPart.Velocity = Vector3.new(0,30,30)
+		game:GetService('RunService').Heartbeat:Wait()
 	until os.clock()-StartTime>=(game:GetService('Players').RespawnTime + 0.6)
-	Humanoid.PlatformStand = true
 	for i,v in pairs(Character:GetDescendants())do
 		if v:IsA("BasePart") then
 			utility.netless(v)
+			task.spawn(function()
+				for i = 1,30 do
+					v.Velocity = Vector3.new(0,30,0)
+					task.wait(-1)
+				end
+			end)
 		end
 	end
-	Humanoid.Health = 0 --// Your joints are now gone.
+	Humanoid.Health = 0
+	task.wait(0.15)
 	for i,v in pairs(hats)do
 		task.spawn(function()
-			for i = 1,100 do
+			for i = 1,150 do
 				v[1].CFrame = v[2]
 				game:GetService("RunService").Heartbeat:Wait()
 			end
 		end)
 	end
+	internal.blinded = false
 end
 utility.disableCollision = function(obj)
 	game:GetService("RunService").Stepped:Connect(function()
@@ -637,7 +664,9 @@ utility.clearChildrenExcept = function(Parent,Exception,OnlyClass)
 		end
 	end
 end
+internal.menuChanged = Instance.new("BindableEvent")
 utility.changeMenu = function(selection)
+	internal.menuChanged:Fire(selection)
 	for i,v in pairs(scriptObjects.menuUI.Menu.Tabs:GetChildren())do
 		if v.ClassName:find("Frame") then
 			if v.Name~=selection then
@@ -665,6 +694,18 @@ for i,v in pairs(scriptObjects.menuBrick.HandMenu.Menu.Tabs:GetChildren())do
 		end)
 	end
 end
+locals.blinder = utility.Create("Part",nil,{Size = Vector3.new(1,1,1),Color = Color3.new(0,0,0),Name = "Blinder",Anchored = true, CanCollide = false})
+locals.blindMesh = utility.Create("SpecialMesh",locals.blinder,{MeshId = "rbxassetid://945057640"})
+game:GetService('RunService').RenderStepped:Connect(function() --// For when internal.blinded == true
+	local blinder = locals.blinder
+	if internal.blinded then --// Comfort
+		blinder.Parent = workspace.CurrentCamera
+		blinder.CFrame = workspace.CurrentCamera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head)
+	else
+		blinder.Parent = nil
+	end
+end)
+
 --\\ ROBLOX BEING BAD, Now I have to use hats...
 local fakeLimbs = {
 	['Right Arm'] = utility.Create("Part",nil,{
@@ -860,16 +901,15 @@ local savedSettings = {
 	Walking = false,
 	--Settings→Page1:
 	CharacterViewport = true,
-	JoinLeave = true,
+	JoinLeave = false,
 	Nametags = true,
 	PersonalSpace = false,
-	QuestControls = true,
 	--Settings→Page2:
 	LightingEffects = true,
 	MotionControls = true,
+	Invisibility = false,
 	Optimization = internal.lowPerformance,
 	SmoothTurning = true,
-	StrongestFling = true,
 }
 
 --// Script begin
@@ -978,6 +1018,11 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			rotator = CFrame.Angles(0,0,0)
 		end
 		utility.setCFrame(handle,(setCFrame*rotator))
+	end
+	if savedSettings.Invisibility then
+		for i,v in pairs(accessories)do
+			utility.setCFrame(v.Handle,CFrame.new(0,workspace.FallenPartsDestroyHeight + 20,0))
+		end
 	end
 end)
 
@@ -1108,6 +1153,7 @@ local TurnStickSettings = {
 	LeftX = 0,
 	LeftY = 0,
 }
+locals.turnDebounce = 0
 UIS.InputChanged:Connect(function(input, processed)
 	if input.KeyCode == AnalogSticks.Left then
 		AnalogSettings.LeftX = input.Position.X
@@ -1117,7 +1163,18 @@ UIS.InputChanged:Connect(function(input, processed)
 		TurnStickSettings.LeftX = input.Position.X
 		TurnStickSettings.LeftY = input.Position.Y
 	end
-	RotationCFrame = RotationCFrame * CFrame.Angles(0,math.rad(TurnStickSettings.LeftX*-1),0)
+	if savedSettings.SmoothTurning == true then
+		RotationCFrame = RotationCFrame * CFrame.Angles(0,math.rad(TurnStickSettings.LeftX*-1),0)
+	else
+		if os.clock()-locals.turnDebounce > 0.2 then
+			if TurnStickSettings.LeftX < -1 then
+				RotationCFrame=RotationCFrame*CFrame.Angles(0,math.rad(-45),0)
+			elseif TurnStickSettings.LeftX > 1 then
+				RotationCFrame=RotationCFrame*CFrame.Angles(0,math.rad(45),0)
+			end
+			locals.turnDebounce = os.clock()
+		end
+	end
 end)
 UIS.InputEnded:Connect(function(key)
 	if key.KeyCode==AnalogSticks.Left then
@@ -1151,6 +1208,11 @@ game:GetService('RunService').RenderStepped:Connect(function()
 			if v.Parent:IsA("Model") and v.Parent:FindFirstChildWhichIsA('Humanoid') and v.Parent ~= User.Character then
 				if not table.find(unpackIgnore,v.Parent) then
 					table.insert(unpackIgnore,v.Parent)
+					for _,x in pairs(v.Parent:GetDescendants())do
+						if x:IsA("BasePart") then
+							table.insert(unpackIgnore,x)
+						end
+					end
 				end
 			end
 		end
@@ -1254,12 +1316,12 @@ function SetSlider(ToggleFrame,SettingName,Boolean)
 	local SlideButton = button:WaitForChild("SlideButton")
 	local Left = UDim2.new(0.072,0,0.174,0)
 	local Right = UDim2.new((1-0.072) - 0.289,0,0.174,0)
-	if savedSettings[SettingName]==true then
+	if Boolean==false then
 		game:GetService("TweenService"):Create(SlideButton,TweenInfo.new(0.15),{
 			Position = Left,
 			BackgroundColor3 = Color3.fromRGB(255,95,95)
 		}):Play()
-	else
+	elseif Boolean == true then
 		game:GetService("TweenService"):Create(SlideButton,TweenInfo.new(0.15),{
 			Position = Right,
 			BackgroundColor3 = Color3.fromRGB(95,255,95)
@@ -1360,6 +1422,7 @@ StartSlider(utility.getObjectInMenu("PlayerESP"),"PlayerESP",function(boolean)
 			table.insert(internal.ESPs.Players,Highlight)
 		end
 		for _,plr in pairs(game:GetService("Players"):GetPlayers())do
+			onAdd(plr)
 		end
 		table.insert(internal.Connections.ESPs.Players,game:GetService("Players").PlayerAdded:Connect(onAdd))
 	else
@@ -1464,6 +1527,91 @@ utility.notify = function(title,message,sfx)
 	scriptObjects.menuUI.Prompt.Visible = true
 	utility.playSound((sfx or 654933978),1)
 end
+--// Settings Tab section:
+locals.currentSettingPage = 1   +1
+locals.settingMain = scriptObjects.menuUI.Menu.Main.Settings
+locals.settingPageText = locals.settingMain.PageNumber
+locals.settingPages  = {[1]=locals.settingMain.Page1,[2]=locals.settingMain.Page2}
+locals.settingNext = locals.settingMain.Next
+locals.settingPrev = locals.settingMain.Previous
+locals.setPage = function()--// I can define locals in here since it's not in scope
+	local newPage = locals.currentSettingPage
+	if newPage==2 then
+		newPage=newPage-1
+	elseif newPage==1 then
+		newPage=newPage+1
+	end
+	locals.currentSettingPage=newPage
+	newPage = locals.settingPages[newPage]
+	for i,v in pairs(locals.settingPages)do
+		v.Visible = false
+	end
+	newPage.Visible = true
+	locals.settingPageText.Text = tostring(locals.currentSettingPage) .. "/" .. tostring(#locals.settingPages)
+end
+locals.setPage()
+locals.settingNext.MouseButton1Down:Connect(function()
+	locals.setPage()
+end)
+locals.settingPrev.MouseButton1Down:Connect(function()
+	locals.setPage()
+end)
+
+StartSlider(locals.settingPages[1].PersonalSpace,"PersonalSpace")
+StartSlider(locals.settingPages[1].CharacterViewport,"CharacterViewport",function(visible)
+	Viewport.Visible = visible
+end)
+StartSlider(locals.settingPages[2].SmoothTurning,"SmoothTurning")
+StartSlider(locals.settingPages[2].Invisibility,"Invisibility")
+
+locals.loopCache = {}
+game:GetService("RunService").RenderStepped:Connect(function() --// init for settings
+	if savedSettings.PersonalSpace then
+		local loopCache = locals.loopCache
+		local headCFrame = workspace.CurrentCamera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head)
+		local people = workspace:GetPartBoundsInBox(headCFrame,Vector3.one*5,OverlapParams.new({['MaxParts']=2000}))
+		local realPeople = {}
+		for _,base in pairs(people)do
+			if base:IsA("BasePart") and base.Parent:IsA("Model") and base.Parent:FindFirstChildWhichIsA("Humanoid") and Players:GetPlayerFromCharacter(base.Parent) and not table.find(realPeople,base.Parent) then
+				table.insert(realPeople,base.Parent)
+			end
+		end
+		for _,model in pairs(loopCache)do
+			if model:FindFirstChildWhichIsA("Humanoid") and not table.find(realPeople,model) and Players:GetPlayerFromCharacter(model) then
+				for _,desc in pairs(model:GetDescendants())do
+					if desc:IsA("BasePart") and desc:GetAttribute("realTransparency") then
+						game:GetService("TweenService"):Create(desc,TweenInfo.new(0.25),{Transparency = desc:GetAttribute("realTransparency")}):Play()
+					end
+				end
+			end
+		end
+		for _,model in pairs(realPeople)do
+			for _,desc in pairs(model:GetDescendants())do
+				if desc:IsA("BasePart") then
+					if not desc:GetAttribute("realTransparency") then
+						desc:SetAttribute("realTransparency",desc.Transparency)
+					end
+					game:GetService("TweenService"):Create(desc,TweenInfo.new(0.25),{Transparency = 1}):Play()
+				end
+			end
+			table.insert(loopCache,model)
+		end
+	else
+		for _,model in pairs(locals.loopCache)do
+			if Players:GetPlayerFromCharacter(model) then
+				for _,desc in pairs(model:GetDescendants())do
+					if desc:IsA("BasePart") and desc:GetAttribute("realTransparency") then
+						game:GetService("TweenService"):Create(desc,TweenInfo.new(0.25),{Transparency = desc:GetAttribute("realTransparency")}):Play()
+					end
+				end
+			end
+		end
+		for i,v in pairs(locals.loopCache)do
+			table.remove(locals.loopCache,i)
+		end
+	end
+end)
+
 --// Social Tab section:
 internal.userFrames = {}
 locals.social = scriptObjects.menuUI.Menu.Main.Social
@@ -1707,7 +1855,23 @@ pcall(function()
 end)
 local ClientInformation = scriptObjects.menuUI.Menu.ClientInformation
 game:GetService("RunService").RenderStepped:Connect(function()
+	local osDate = os.date("*t")
+	local osHour = osDate.hour
+	local osMin = osDate.min
+	if osMin<10 then
+		osMin= "0" .. tostring(osMin)
+	end
+	local amPM = osHour < 12 and "A.M." or "P.M."
+	if amPM=="P.M." then
+		osHour=osHour-12
+	end
+	local set = {
+		['Time'] = tostring(osHour) .. ":" .. osMin .. " " .. amPM,
+		['Date'] = osDate.month .. "/" .. osDate.day .. "/" .. osDate.year,
+	}
 	ClientInformation.Text = "RejectCharacterDeletions: " .. tostring(internal.RejectCharacterDeletions) .. "\nFPS: " .. tostring(getfenv(0).FPS)
+	scriptObjects.menuUI.Menu.ContextBar.Time.Text = set.Time
+	scriptObjects.menuUI.Menu.ContextBar.Date.Text = set.Date
 end)
 
 --// Wrist-Rotation functions
@@ -1774,17 +1938,34 @@ end)
 
 --// Let them know
 utility.notify("Menu Update 2",[[
-Two new tabs scripted in
----
-• Socials (Click their name for a pop-up)
 
-• Pinpoints
----
+* Please recenter yourself before saying you're moving weird.
 
-[+] Slowed down your movement speed
-[Lmk if you have any issues]
+(Added settings tab + automatic sliders)
+(Added personal space)
+(Added toggle to character viewport)
+(Added invisibility button)
+
 ]])
 
 scriptObjects.menuUI.Menu.Version.Text = "Version " .. internal.VERSION
 utility.changeMenu("")
 utility.changeMenu("Home")
+locals.notifiedSettings = false
+internal.menuChanged.Event:Connect(function(menu)
+	if menu=='Settings' and locals.notifiedSettings==false then
+		locals.notifiedSettings = true
+		utility.notify("Real quick:","Not every setting is complete. So if some sliders are not working, you know why.",5521959695)
+	end
+end)
+--
+for i,v in pairs(savedSettings)do
+	pcall(function()
+		local toggleUI = nil
+		for _,ob in pairs(scriptObjects.menuUI:GetDescendants())do
+			if ob:FindFirstChild("Toggle") and ob.Name==tostring(i) then
+				SetSlider(ob.Toggle,tostring(i),v)
+			end
+		end
+	end)
+end

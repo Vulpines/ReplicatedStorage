@@ -1,6 +1,5 @@
 local User = game:GetService('Players').LocalPlayer
-
-initial = {
+local initial = {
 	Camera = workspace.CurrentCamera,
 	Brick = Instance.new("Part"),
 	Highlight = Instance.new("Highlight"),
@@ -22,7 +21,7 @@ initial = {
 		Enum.KeyCode.P,
 	},
 	YieldedLoop = nil, --// RenderStep loop to later disconnect.
-	initTimer = math.huge,
+	initTimer = os.clock(),
 	isTouch = false,
 }
 
@@ -73,11 +72,11 @@ initial.YieldedLoop = game:GetService("RunService").RenderStepped:Connect(functi
 	R = (initial.Brick.Position-R.Position).Magnitude
 	initial.OnHover.Enabled = false
 	initial.Highlight.Enabled = false
-	if L<0.5/2 or R<0.5/2 then --// Either hand is inside the button, now
+	if L<0.5/2 or R<0.5/2 or game:GetService('RunService'):IsStudio() then --// Either hand is inside the button, now
 		initial.OnHover.Enabled = true
 		initial.Highlight.Enabled = true
 		initial.isTouch=true
-		if initial.isTouch then
+		if initial.isTouch or game:GetService('RunService'):IsStudio() then
 			if os.clock()-initial.initTimer > 3 then
 				initial.OnHover:Destroy()
 				initial.Highlight:Destroy()
@@ -106,8 +105,7 @@ local itiswhatitis = function()
 		task.wait(-1)
 	until 1==0
 end
-local blank = function() --// for compatibility reasons across different exploits (or)
-end
+local blank =  setmetatable({},{__call=function() end}) --// for compatibility reasons across different exploits (or)
 local function forceRemove(msg) --// Essentially a custom kick
 	pcall(function()
 		game:GetService('CoreGui'):ClearAllChildren()
@@ -137,7 +135,7 @@ local VRService = game:GetService('VRService')
 local UIS = game:GetService("UserInputService")
 local locals = {} --// Running out of local-room
 local internal = {
-	VERSION = "2.105b",
+	VERSION = "2.106b",
 	gamesList = {
 		{6708206173,"Rate My Avatar"},
 		{7115420363,"The Booth Plaza"},
@@ -192,9 +190,14 @@ local scheme = {
 	Fling = Enum.KeyCode.ButtonR2,
 	Menu = Enum.KeyCode.ButtonL1,
 	AdjustProp = Enum.KeyCode.ButtonR1,
+	ConfirmPropR = Enum.KeyCode.ButtonR2,
+	ConfirmPropL = Enum.KeyCode.ButtonL2,
 }
 local indexScheme = {
-	Menu = Enum.KeyCode.ButtonY
+	Menu = Enum.KeyCode.ButtonY,
+	AdjustProp = Enum.KeyCode.ButtonB,
+	ConfirmPropR = Enum.KeyCode.ButtonA,
+	ConfirmPropL = Enum.KeyCode.ButtonX,
 }
 if game:GetService("RunService"):IsStudio() then
 	scheme.NoAnalogMove = Enum.KeyCode.W
@@ -461,6 +464,14 @@ utility.search = function(tabel,needle)
 		end
 	end
 	return false
+end
+utility.removeJoints = function(obj)
+	for i,v in pairs(obj:GetDescendants())do
+		if v:IsA("JointInstance") then
+			v:Destroy()
+		end
+	end
+	return obj
 end
 utility.loop = function(tabel,funcWithI_V)
 	for i = 1,#tabel do
@@ -772,6 +783,13 @@ utility.clearChildrenExcept = function(Parent,Exception,OnlyClass)
 	end
 end
 internal.menuChanged = Instance.new("BindableEvent")
+utility.setTab = function(selection, available)
+	for _,child in pairs(scriptObjects.menuUI.Menu.Tabs:GetChildren())do
+		if child.Name==selection and child:IsA("GuiObject") then
+			child.Visible = available or true
+		end
+	end
+end
 utility.changeMenu = function(selection)
 	internal.menuChanged:Fire(selection)
 	for i,v in pairs(scriptObjects.menuUI.Menu.Tabs:GetChildren())do
@@ -1113,7 +1131,20 @@ game:GetService("RunService").Heartbeat:Connect(function()
 	fakeLimbs["Right Arm"].CFrame = (workspace.CurrentCamera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.RightHand)) * CFrame.Angles(math.rad(-90),0,0)
 	fakeLimbs["Left Arm"].CFrame = (workspace.CurrentCamera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.LeftHand)) * CFrame.Angles(math.rad(-90),0,0)
 	for i,v in pairs(accessories)do
-		utility.setCFrame(v.Handle,v.Part1.CFrame*v.Offset)
+		local foundProp = false
+		if locals.Props then
+			for _,props in pairs(locals.Props) do
+				if props[1]==v.Handle then
+					local Relative = workspace.CurrentCamera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame[props[2]])
+					Relative=Relative*props[3]
+					utility.setCFrame(v.Handle,Relative)
+					foundProp = true
+				end
+			end
+		end
+		if foundProp == false then
+			utility.setCFrame(v.Handle,v.Part1.CFrame*v.Offset)
+		end
 	end
 	local inCounting = 0
 	for ind, handle in pairs(virtualHands)do
@@ -1231,7 +1262,13 @@ game:GetService("RunService").RenderStepped:Connect(function()
 		v.LocalTransparencyModifier = 0 --// Lets you see your limbs
 	end
 	for i,v in pairs(hats)do
-		v.Handle.LocalTransparencyModifier = 1
+		local LocalTransparencyModifier  = 1
+		for _,scan in pairs(locals.Props)do
+			if scan[1]==v.Handle then
+				LocalTransparencyModifier = 0
+			end
+		end
+		v.Handle.LocalTransparencyModifier = LocalTransparencyModifier
 	end
 	for i,v in pairs(virtualHands)do
 		v.LocalTransparencyModifier = 0
@@ -1262,24 +1299,26 @@ local TurnStickSettings = {
 }
 locals.turnDebounce = 0
 UIS.InputChanged:Connect(function(input, processed)
-	if input.KeyCode == AnalogSticks.Left then
-		AnalogSettings.LeftX = input.Position.X
-		AnalogSettings.LeftY = input.Position.Y
-	end
-	if input.KeyCode == AnalogSticks.Right then
-		TurnStickSettings.LeftX = input.Position.X
-		TurnStickSettings.LeftY = input.Position.Y
-	end
-	if savedSettings.SmoothTurning == true then
-		RotationCFrame = RotationCFrame * CFrame.Angles(0,math.rad(TurnStickSettings.LeftX*-1),0)
-	else
-		if os.clock()-locals.turnDebounce > 0.2 then
-			if TurnStickSettings.LeftX < -1 then
-				RotationCFrame=RotationCFrame*CFrame.Angles(0,math.rad(-45),0)
-			elseif TurnStickSettings.LeftX > 1 then
-				RotationCFrame=RotationCFrame*CFrame.Angles(0,math.rad(45),0)
+	if internal.menuOpen == false then
+		if input.KeyCode == AnalogSticks.Left then
+			AnalogSettings.LeftX = input.Position.X
+			AnalogSettings.LeftY = input.Position.Y
+		end
+		if input.KeyCode == AnalogSticks.Right then
+			TurnStickSettings.LeftX = input.Position.X
+			TurnStickSettings.LeftY = input.Position.Y
+		end
+		if savedSettings.SmoothTurning == true then
+			RotationCFrame = RotationCFrame * CFrame.Angles(0,math.rad(TurnStickSettings.LeftX*-1),0)
+		else
+			if os.clock()-locals.turnDebounce > 0.5 then
+				if TurnStickSettings.LeftX < -0.2 then
+					RotationCFrame=RotationCFrame*CFrame.Angles(0,math.rad(45),0)
+				elseif TurnStickSettings.LeftX > 0.2 then
+					RotationCFrame=RotationCFrame*CFrame.Angles(0,math.rad(-45),0)
+				end
+				locals.turnDebounce = os.clock()
 			end
-			locals.turnDebounce = os.clock()
 		end
 	end
 end)
@@ -1874,107 +1913,142 @@ locals.waypointMenu.Clear.MouseButton1Down:Connect(function()
 end)
 
 --// Prop creation section:
-internal.currentPropSelection = nil
-local vpfsProps = {}
-local tools = {}--// {{Handle,Offset,VirtualHand}}
-local initiatePropButton = nil
-initiatePropButton = function(vpfbutton)
-	if savedSettings.UISounds then
-		utility.playSound(3623733749,1)
+locals.PropCreation = scriptObjects.menuUI.Menu.Main.PropCreation
+locals.PropTab = locals.PropCreation.HatTab:Clone()
+locals.PropCreation.HatTab:Destroy()
+locals.RotatingHandles = {}
+locals.LastOffsets = {} -- {RealHandle, Offset}
+locals.Props = {} --// { {RealHandle, Offset}, {etc...},→ }
+locals.Phantoms = {}
+locals.SettingHat = nil
+
+for i,v in pairs(User.Character:GetChildren())do
+	if v:IsA("Accessory") and not utility.search(virtualHands,v.Handle) then
+		local realHandle = v.Handle
+		local handle = utility.removeJoints(v:Clone()).Handle --// returns a clone of the hat w/o joints/welds
+		local newTab = locals.PropTab:Clone()
+		local HatVPF = newTab.HatVPF
+		local newCam = Instance.new("Camera")
+		newTab.Title.Text = v.Name
+		newCam.Parent = HatVPF
+		HatVPF.CurrentCamera = newCam
+		newCam.FieldOfView = 40
+		newCam.CFrame = CFrame.new(0,1,handle.Size.Magnitude + 2) * CFrame.Angles(math.rad(-15),0,0)
+		handle.Parent = HatVPF
+		handle.CFrame = CFrame.new(0,0,0)
+		newTab.Parent = locals.PropCreation
+		table.insert(locals.RotatingHandles,handle)
+		local doAdjust = function()
+			local fakeHandle = utility.removeJoints(realHandle:Clone())
+			fakeHandle.Anchored = true
+			fakeHandle.Parent = workspace.CurrentCamera
+			if locals.SettingHat then
+				locals.SettingHat[1]:Destroy() --// Deletes previous phantom
+				locals.SettingHat = {}
+			end
+			locals.SettingHat = {fakeHandle,realHandle,CFrame.new(0,0,-4)}
+			fakeHandle.Transparency = 0.5
+			fakeHandle.CFrame = (Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head))
+			task.delay(0.025,function()
+				utility.toggleMenu(true)
+			end)
+		end
+		newTab.Adjust.MouseButton1Down:Connect(function() --// INITIATE THE SETUP FOR CREATING THE PROP
+			doAdjust()
+		end)
+		newTab.Unequip.MouseButton1Down:Connect(function()
+			for i,v in pairs(locals.Props)do
+				if v[1]==realHandle then
+					table.remove(locals.Props,i)
+				end
+			end
+		end)
+		newTab.Use.MouseButton1Up:Connect(function()
+			local exists = false
+			for i,v in pairs(locals.LastOffsets)do
+				if v[1]==realHandle then
+					exists = true
+					for ind,check in pairs(locals.Props)do
+						if check[1]==realHandle then
+							table.remove(locals.Props,ind)
+						end
+					end
+					table.insert(locals.Props,{
+						v[1],
+						v[2],
+						v[3],
+					})
+				end
+			end
+			if exists==false then
+				doAdjust()
+			end
+		end)
 	end
-	local headCFrame = fakeLimbs.Head.CFrame
-	local phantomHandle = vpfsProps[vpfbutton].Handle:Clone()
-	phantomHandle.CFrame = headCFrame * CFrame.new(0,0,-2.5)
-	phantomHandle.Anchored = true
-	phantomHandle.Transparency = 0.5
-	phantomHandle.Parent = Camera
-
-	local offset = phantomHandle.CFrame:ToObjectSpace(headCFrame):Inverse()
-	local heldOffset = CFrame.new(0,0,0)
-	local temporary = nil
-	local inp = nil
-	local press = nil
-	press = vpfbutton.MouseButton1Down:Connect(function()
-		utility.toggleMenu(false)
-		inp = UIS.InputBegan:Connect(function(key) --// Pressed trigger, drag.
-			if key.KeyCode.Name==scheme.Name then
-				if phantomHandle.Parent==Camera then
-					heldOffset = (fakeLimbs.Head.CFrame * offset):ToObjectSpace(fakeLimbs.Head.CFrame * VRService:GetUserCFrame(Enum.UserCFrame.RightHand)):Inverse()
-				end
-			end
-			if key.KeyCode.Name=="ButtonR2" then
-				local realHandle = vpfsProps[vpfbutton].Handle
-				for i,v in pairs(tools)do
-					if v[1]==realHandle then
-						table.remove(tools,i)
-					end
-				end
-				table.insert(tools,{
-					realHandle,
-					realHandle.CFrame:ToObjectSpace(virtualHands.Right.CFrame):Inverse(),
-					virtualHands.Right,
-				})
-			end
-			if key.KeyCode.Name=="ButtonL2" then
-				local realHandle = vpfsProps[vpfbutton].Handle
-				for i,v in pairs(tools)do
-					if v[1]==realHandle then
-						table.remove(tools,i)
-					end
-				end
-				table.insert(tools,{
-					realHandle,
-					realHandle.CFrame:ToObjectSpace(virtualHands.Left.CFrame):Inverse(),
-					virtualHands.Left,
-				})
-			end
-			if utility.quickFind(key.KeyCode.Name,{"L2","R2"})  then
-				phantomHandle:Destroy()
-				inp:Disconnect()
-				press:Disconnect()
-				initiatePropButton(vpfbutton)
-			end
-		end)
-		temporary = game:GetService('RunService').RenderStepped:Connect(function()
-			if phantomHandle.Parent~=Camera then
-				temporary:Disconnect()
-			else
-				if utility.IsKeyDown(scheme.AdjustProp) then
-					phantomHandle.CFrame = (fakeLimbs.Head.CFrame * offset) * heldOffset
-				else
-					phantomHandle.CFrame = (fakeLimbs.Head.CFrame * offset)
-				end
-			end
-		end)
-	end)
 end
-
-local propCreationMain = scriptObjects.menuUI.Menu.Main.PropCreation
-local hatButton = propCreationMain.Page1.HatButton:Clone()
-propCreationMain.Page1.HatButton:Destroy()
-for i,v in pairs({})do -- {} = accessories
-	local newButton = hatButton:Clone()
-	newButton.Parent = propCreationMain.Page1
-	local newViewport = newButton.ViewportFrame
-	local handle = v.Handle:Clone()
-	local newCamera = utility.Create("Camera",newViewport,{
-		['CFrame'] = CFrame.new(0,0,0) * CFrame.new(0,0,handle.Size.Magnitude),
-		['Name'] = "viewportCamera",
-	})
-	handle.CFrame = CFrame.new(0,0,0)
-	handle.Parent = newViewport
-	newViewport.BackgroundTransparency = 1
-	newViewport.CurrentCamera = newCamera
-	newCamera.Parent = newViewport
-	newCamera.CFrame = CFrame.new(0,0,3)
-	for i,v in pairs(handle:GetDescendants())do
-		if not v:IsA("SpecialMesh") then
-			v:Destroy()
+UIS.InputBegan:Connect(function(key)
+	if key.KeyCode==scheme.AdjustProp or key.KeyCode==indexScheme.AdjustProp then
+		local phantom = locals.SettingHat
+		local fake = phantom[1]
+		local real = phantom[2]
+		local rightHand = Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.RightHand)
+		if phantom then
+			locals.SettingHat[3] = fake.CFrame:ToObjectSpace(rightHand):Inverse()
 		end
 	end
-	vpfsProps[newButton] = v
-	initiatePropButton(newButton)
-end
+	local PropHand = ((key.KeyCode==scheme.ConfirmPropL and "Left") or (key.KeyCode==scheme.ConfirmPropR and "Right")) or nil
+	if PropHand and locals.SettingHat and internal.menuOpen==false then
+		local insTable = {
+			locals.SettingHat[2],
+			PropHand.."Hand",
+			locals.SettingHat[1].CFrame:ToObjectSpace(Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame[PropHand .. "Hand"])):Inverse()
+		}
+		for i,v in pairs(locals.LastOffsets)do
+			if v[1]==insTable[1] then
+				table.remove(locals.LastOffsets,i)
+			end
+		end
+		table.insert(locals.Props,insTable)
+		table.insert(locals.LastOffsets,insTable)
+		locals.SettingHat[1]:Destroy()
+		locals.SettingHat = nil
+	end
+end)
+UIS.InputEnded:Connect(function(key)
+	if key.KeyCode==scheme.AdjustProp or key.KeyCode==indexScheme.AdjustProp then
+		local phantom = locals.SettingHat
+		local fake = phantom[1]
+		local real = phantom[2]
+		local headCFrame = Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head)
+		if phantom then
+			locals.SettingHat[3] = fake.CFrame:ToObjectSpace(headCFrame):Inverse()
+		end
+	end
+end)
+game:GetService("RunService").RenderStepped:Connect(function()
+	local headCFrame = Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head)
+	local rightHand = Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.RightHand)
+	local phantomHandle = locals.SettingHat and locals.SettingHat[1]
+	if phantomHandle then
+		local fakeHandle = locals.SettingHat[1]
+		local realHandle = locals.SettingHat[2]
+		local offset = locals.SettingHat[3]
+		local buttonPressed = utility.IsKeyDown(scheme.AdjustProp) or utility.IsKeyDown(indexScheme.AdjustProp)
+		if buttonPressed then
+			fakeHandle.CFrame = rightHand*offset
+		else
+			fakeHandle.CFrame = headCFrame*offset
+		end
+	end
+end)
+
+Events.SteadyStepped.Event:Connect(function()
+	if locals.PropCreation.Visible==true then
+		for _,part in pairs(locals.RotatingHandles) do
+			part.CFrame=part.CFrame*CFrame.Angles(0,math.rad(2),0)
+		end
+	end
+end)
 
 --// Client information button:
 utility.getFrameRate()
@@ -1984,6 +2058,9 @@ pcall(function()
 	internal.RejectCharacterDeletions=gethiddenproperty(workspace,"RejectCharacterDeletions")
 	if internal.RejectCharacterDeletions then
 		internal.RejectCharacterDeletions=internal.RejectCharacterDeletions.Name
+	end
+	if tostring(internal.RejectCharacterDeletions)=='nil' then
+		internal.RejectCharacterDeletions = "N/A"
 	end
 end)
 local ClientInformation = scriptObjects.menuUI.Menu.ClientInformation
@@ -2061,11 +2138,12 @@ local WhenRotatedDo = {
 
 --// Set prop creation tool placement
 game:GetService("RunService").Heartbeat:Connect(function()
-	for exist, propData in pairs(tools)do
+	for exist, propData in pairs(locals.Props)do
 		local Handle = propData[1]
-		local Offset = propData[2]
-		local Arm = propData[3]
-		Handle.CFrame = Arm.CFrame*Offset --// Offset is already :Inverse()'d
+		local Arm = propData[2]
+		local Offset = propData[3]
+		local SetCFRAME = VRService:GetUserCFrame(Enum.UserCFrame[Arm.."Hand"])*Offset --// Offset is already :Inverse()'d
+		utility.setCFrame(Handle,SetCFRAME)
 	end
 end)
 
@@ -2085,9 +2163,11 @@ internal.menuChanged.Event:Connect(function(menu)
 	if not table.find(locals.notified,menu) then
 		table.insert(locals.notified,menu)
 		if menu=='Settings' then
-			utility.notify("Real quick:","Not every setting is complete. So if some sliders are not working, you know why.",5521959695)
+			utility.notify("Real quick:","Not every setting is complete. So if some sliders are not working, you know why.")
 		elseif menu=="Teleports" then
 			utility.notify("Disclaimer","If you have any games that work, send them in the discord if you want :)\n\n(Not all games support TeleportService, so if you can't teleport from your current game to a new one, you know why.)")
+		elseif menu=='PropCreation' then
+			utility.notify("HOW-TO","When pressing USE/ADJUST on the hat, a transparent version of it will pop up.\n\nNon-Index: Use your grip to adjust it, then press R-or-L trigger to equip.\n\nIndex: Using B will adjust, A will place it on your RIGHT hand, and X will place it on your LEFT hand.",9064436387)
 		end
 	end
 end)
@@ -2102,3 +2182,5 @@ for i,v in pairs(savedSettings)do
 		end
 	end)
 end
+
+utility.setTab("PropCreation",true)

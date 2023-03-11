@@ -22,6 +22,8 @@ initial = {
 		Enum.KeyCode.P,
 	},
 	YieldedLoop = nil, --// RenderStep loop to later disconnect.
+	initTimer = math.huge,
+	isTouch = false,
 }
 
 initial.propChange(initial.OnHover,{
@@ -63,7 +65,7 @@ initial.propChange(initial.Highlight,{
 })
 initial.YieldedLoop = game:GetService("RunService").RenderStepped:Connect(function()
 	local headCFrame = initial.Camera.CFrame*game:GetService('VRService'):GetUserCFrame(Enum.UserCFrame.Head)
-	initial.Brick.CFrame = CFrame.new(( headCFrame*CFrame.new(0.5,-0.25,-0.5) ).Position)
+	initial.Brick.CFrame = CFrame.new(( headCFrame*CFrame.new(0.25,-0.25,-1.5) ).Position)
 	--
 	local L = initial.Camera.CFrame*game:GetService('VRService'):GetUserCFrame(Enum.UserCFrame.LeftHand)
 	local R = initial.Camera.CFrame*game:GetService('VRService'):GetUserCFrame(Enum.UserCFrame.RightHand)
@@ -71,11 +73,12 @@ initial.YieldedLoop = game:GetService("RunService").RenderStepped:Connect(functi
 	R = (initial.Brick.Position-R.Position).Magnitude
 	initial.OnHover.Enabled = false
 	initial.Highlight.Enabled = false
-	if L<0.5/2 or R<0.5/2 or game:GetService('RunService'):IsStudio() then --// Either hand is inside the button, now
+	if L<0.5/2 or R<0.5/2 then --// Either hand is inside the button, now
 		initial.OnHover.Enabled = true
 		initial.Highlight.Enabled = true
-		for _,key in pairs(initial.ValidTriggers)do
-			if initial.UIS:IsKeyDown(key) then --// key is already a keycode variable
+		initial.isTouch=true
+		if initial.isTouch then
+			if os.clock()-initial.initTimer > 3 then
 				initial.OnHover:Destroy()
 				initial.Highlight:Destroy()
 				initial.Brick:Destroy()
@@ -83,6 +86,9 @@ initial.YieldedLoop = game:GetService("RunService").RenderStepped:Connect(functi
 				initial.YieldedLoop:Disconnect() --// Finally, stops the load yield.
 			end
 		end
+	else
+		initial.isTouch=false
+		initial.initTimer = os.clock()
 	end
 end)
 
@@ -1765,9 +1771,12 @@ locals.initiateUserFrame = function(plr)
 		locals.socialActionVictim = plr
 		locals.social.ActionMenu.user.Text = plr.Name .. " (@" .. plr.DisplayName .. ") "
 	end)
-	if plr and plr.IsFriendsWith and plr:IsFriendsWith(User.UserId)==true then
-		newFrame.BackgroundColor3 = Color3.fromRGB(115, 105, 70) --// Gold indicates a friend
-	end
+	pcall(function()
+		game:GetService("FriendService")
+		if plr and plr.IsFriendsWith and plr:IsFriendsWith(User.UserId)==true then
+			newFrame.BackgroundColor3 = Color3.fromRGB(115, 105, 70) --// Gold indicates a friend
+		end
+	end)
 	if plr == User then
 		newFrame.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
 		newFrame.plr.TextColor3 = Color3.fromRGB(30,30,30)

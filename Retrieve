@@ -1263,7 +1263,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
 	end
 	for i,v in pairs(hats)do
 		local LocalTransparencyModifier  = 1
-		for _,scan in pairs(locals.Props)do
+		for _,scan in pairs(locals.Props or {})do
 			if scan[1]==v.Handle then
 				LocalTransparencyModifier = 0
 			end

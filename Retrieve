@@ -135,7 +135,7 @@ local VRService = game:GetService('VRService')
 local UIS = game:GetService("UserInputService")
 local locals = {} --// Running out of local-room
 local internal = {
-	VERSION = "2.106b",
+	VERSION = "2.107b",
 	gamesList = {
 		{6708206173,"Rate My Avatar"},
 		{7115420363,"The Booth Plaza"},
@@ -148,9 +148,14 @@ local internal = {
 		{4483381587,"A Literal Baseplate"},
 		{2788229376,"Da Hood","(Da-Hood has weird protection, so there's a 70% chance you'll need to reload until it works.)"},
 	},
+	checkBoxIds = {
+		["Enabled"] = "rbxassetid://4458804262",
+		["Disabled"] = "rbxassetid://4458801905",
+	},
 	strongIdentity = pcall(function() _ = game:GetService('CoreGui').FindFirstChild end), --// If you can access coregui, GREAT!! If you can't, it'll obviously be in studio testing mode... Maybe.
 	hasFileAccess = getfenv(0).writefile~=nil,
 	sourceFolder = "Brew\\",
+	pluginExtension = ".bvp",
 	formatInitials = function(str)
 		local split = str:split(" ")
 		local initials = ""
@@ -464,6 +469,19 @@ utility.search = function(tabel,needle)
 		end
 	end
 	return false
+end
+utility.loadAsset = function(id)
+	id = id:gsub("%D+","")
+	local scr = Instance.new("ScreenGui")
+	local img = Instance.new("ImageLabel")
+	img.Size = UDim2.new(0,1,0,1)
+	img.Parent = scr
+	img.Image = "rbxassetid://" .. id
+	img.BackgroundTransparency = 1
+	img.ImageTransparency = 0.99
+	img.Rotation = 0.01 --// so it's sure to render
+	scr.Parent = ((internal.strongIdentity and game:GetService('CoreGui')) or User:FindFirstChildWhichIsA('PlayerGui'))
+	game:GetService("Debris"):AddItem(scr,5)
 end
 utility.removeJoints = function(obj)
 	for i,v in pairs(obj:GetDescendants())do
@@ -2049,6 +2067,46 @@ Events.SteadyStepped.Event:Connect(function()
 		end
 	end
 end)
+--// Plugin section:
+for _,asset in pairs(internal.checkBoxIds)do
+	utility.loadAsset(asset)
+end
+locals.pluginMain = scriptObjects.menuUI.Menu.Main.Plugins
+locals.pluginTab = locals.pluginMain.PluginTab:Clone()
+locals.pluginMain.PluginTab:Destroy()
+locals.addPlugin = function(str)
+	str=(loadstring(str)()) --// turn str into a loadstring for the string documents
+	if str.IsSpecificGame and str.IsSpecificGame~=game.PlaceId then
+		return
+	end
+	str.Objects.MenuUI = scriptObjects.menuUI.Menu
+	str.Objects.Tabs = scriptObjects.menuUI.Menu.Tabs
+	str.Objects.Hands.Left = virtualHands.Left
+	str.Objects.Hands.Right = virtualHands.Right
+	local pluginTab = locals.pluginTab:Clone()
+	pluginTab.Toggle.Image = internal.checkBoxIds.Disabled
+	pluginTab.Title.Text = str.Name
+	pluginTab.Contents.Text = str.Description .. "\n"
+	pluginTab.Parent = locals.pluginMain
+	pluginTab.Toggle.MouseButton1Down:Connect(function()
+		str.Enabled = not str.Enabled
+	end)
+	str.StatusChanged:Connect(function(newBoolean)
+		if newBoolean==true then
+			pluginTab.Toggle.Image = internal.checkBoxIds.Enabled
+		else
+			pluginTab.Toggle.Image = internal.checkBoxIds.Disabled
+		end
+	end)
+end
+for i,v in pairs(listfiles("Brew"))do --// Gets files under sourceFolder
+	local len = #v
+	if v.Name:sub((len - #internal.pluginExtension)+1,len) == internal.pluginExtension and internal.hasFileAccess then
+		pcall(function()
+			locals.addPlugin(readfile(internal.sourceFolder .. v))
+		end)
+	end
+end
 
 --// Client information button:
 utility.getFrameRate()
@@ -2168,6 +2226,8 @@ internal.menuChanged.Event:Connect(function(menu)
 			utility.notify("Disclaimer","If you have any games that work, send them in the discord if you want :)\n\n(Not all games support TeleportService, so if you can't teleport from your current game to a new one, you know why.)")
 		elseif menu=='PropCreation' then
 			utility.notify("HOW-TO","When pressing USE/ADJUST on the hat, a transparent version of it will pop up.\n\nNon-Index: Use your grip to adjust it, then press R-or-L trigger to equip.\n\nIndex: Using B will adjust, A will place it on your RIGHT hand, and X will place it on your LEFT hand.",9064436387)
+		elseif menu=='Plugins' then
+			utility.notify("Incompatible","Your exploit does not support plugins. Sorry.",9064436387)
 		end
 	end
 end)
@@ -2182,5 +2242,5 @@ for i,v in pairs(savedSettings)do
 		end
 	end)
 end
-
 utility.setTab("PropCreation",true)
+utility.setTab("Plugins",true)

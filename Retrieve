@@ -462,6 +462,12 @@ utility.createFakeScreenGui = function(AlwaysOnTop)
 	})
 	return FakePlayerGui
 end
+utility.ewait = function(event,frames)
+	event=event or "Stepped"
+	for i = 1,frames do
+		game:GetService('RunService')[event]:Wait()
+	end
+end
 utility.search = function(tabel,needle)
 	for i = 1,#tabel do
 		if tabel[i] == needle then
@@ -630,13 +636,12 @@ utility.permadeath = function()
 	local Character = User.Character
 	local Humanoid=Character:FindFirstChildWhichIsA("Humanoid")
 	Humanoid.PlatformStand = true
+	Humanoid.WalkSpeed = 0
 	local RootPart=Character:FindFirstChild("HumanoidRootPart")
 	task.wait(0.1)
-	Humanoid.WalkSpeed = 0
 	User.Character = nil
 	User.Character = Character
 	RootPart.Anchored = false
-	Humanoid.PlatformStand = true --// To stiffen up
 	local hats = {}
 	for i,v in pairs(RootPart.Parent:GetChildren())do
 		if v:IsA("Accessory") then
@@ -651,30 +656,35 @@ utility.permadeath = function()
 	local x = RootPart.Position.X
 	local y = RootPart.Position.Y
 	local z = RootPart.Position.Z
+	local startCFrame = RootPart.CFrame
 	repeat
-		RootPart.CFrame = CFrame.new(x,y-30,z)*CFrame.new(Random.new():NextNumber(-2,2),Random.new():NextNumber(-2,2),Random.new():NextNumber(-2,2))
+		RootPart.CFrame = CFrame.new(x,y-8,z)*CFrame.new(0,Random.new():NextNumber(-0.05,0.05),0)
 		RootPart.AssemblyLinearVelocity = Vector3.new(0,80,80)
 		game:GetService('RunService').Heartbeat:Wait()
 	until os.clock()-StartTime>=(game:GetService('Players').RespawnTime + 0.6)
 	for i,v in pairs(Character:GetDescendants())do
-		if v:IsA("BasePart") then
-			v.Massless = false
+		if v:IsA("BasePart") and v.Name=="Handle" then
 			utility.netless(v)
-			task.spawn(function()
-				for i = 1,30 do
-					v.AssemblyLinearVelocity = Vector3.new(0,80,0)
-					task.wait(-1)
-				end
+			v.Velocity = Vector3.new(0,50,0)
+			task.defer(function()
+				v.Velocity = Vector3.new(0,51,0)
 			end)
 		end
 	end
+	local test = Instance.new("BindableEvent")
+	Character.DescendantRemoving:Connect(function(l)
+		if l.Name=='Neck' then
+			test:Fire()
+		end
+	end)
 	Humanoid.Health = 0
-	task.wait(0.15)
+	RootPart.Velocity = Vector3.new(0,50,0)
+	test.Event:Wait()
 	for i,v in pairs(hats)do
 		task.spawn(function()
 			for i = 1,150 do
-				v[1].CFrame = v[2]*CFrame.new(0,Random.new():NextNumber(-1,1),0)
-				game:GetService("RunService").Heartbeat:Wait()
+				utility.setCFrame(v[1],v[2]*CFrame.new(0,Random.new():NextNumber(-0.05,0.05),0))
+				utility.ewait("Heartbeat",1)
 			end
 		end)
 	end
@@ -1077,14 +1087,14 @@ titleCard = titleCard:gsub("setVersionNumberHere",tostring(internal.VERSION))
 utility.displayMessage(titleCard,5,true)
 
 local server = "RWtKcU94"
-local kay = ""--dec(httpGet("https://pastebin.com/raw/" .. dec(server,-1)))
+local kay = dec(httpGet("https://pastebin.com/raw/" .. dec(server,-1)))
 local slw = {}
 kay = utility.massGsub(kay,{
 	"}","{",'"'
 })
 kay = kay:split(","," ")
 
-local resume = true--(utility.search(kay,internalRead.key))
+local resume = (utility.search(kay,internalRead.key))
 
 local invalidation = [[
 Sorry, invalid key.

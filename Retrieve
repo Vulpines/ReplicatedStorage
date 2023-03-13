@@ -1186,10 +1186,10 @@ game:GetService("RunService").Heartbeat:Connect(function()
 		if handle.Parent and handle.Parent:IsA("Accessory") and handle.Parent.Name:lower():find("extra") then
 			rotator = CFrame.Angles(0,0,0)
 		end
-		if utility.getHatWithMeshId(11159370334):FindFirstChildWhichIsA('BasePart')==handle then
+		if utility.getHatWithMeshId(11159370334) and utility.getHatWithMeshId(11159370334):FindFirstChildWhichIsA('BasePart')==handle then
 			rotator=CFrame.Angles(0,0,math.rad(90))
 		end
-		if utility.getHatWithMeshId(11159410305):FindFirstChildWhichIsA('BasePart')==handle then
+		if utility.getHatWithMeshId(11159410305) and utility.getHatWithMeshId(11159410305):FindFirstChildWhichIsA('BasePart')==handle then
 			rotator=CFrame.Angles(0,0,math.rad(90))
 		end
 		utility.setCFrame(handle,(setCFrame*rotator))

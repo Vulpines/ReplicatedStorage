@@ -2114,7 +2114,7 @@ locals.addPlugin = function(str)
 end
 for i,v in pairs(listfiles("Brew"))do --// Gets files under sourceFolder
 	local len = #v
-	if v:sub((len - #internal.pluginExtension)+1,len) == internal.pluginExtension and internal.hasFileAccess then
+	if v:find(internal.pluginExtension) and internal.hasFileAccess then
 		pcall(function()
 			locals.addPlugin(readfile(internal.sourceFolder .. v))
 		end)

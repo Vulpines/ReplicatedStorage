@@ -2165,7 +2165,7 @@ locals.addPlugin = function(str)
 		end
 	end)
 end
-for i,v in pairs(listfiles("Brew"))do --// Gets files under sourceFolder
+for i,v in pairs(listfiles(internal.sourceFolder))do --// Gets files under sourceFolder
 	local len = #v
 	if v:find(internal.pluginExtension) and internal.hasFileAccess then
 		pcall(function()

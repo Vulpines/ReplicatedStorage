@@ -651,8 +651,8 @@ utility.permadeath = function()
 	local y = RootPart.Position.Y
 	local z = RootPart.Position.Z
 	repeat
-		RootPart.CFrame = CFrame.new(x,y-30,z)
-		RootPart.Velocity = Vector3.new(0,30,30)
+		RootPart.CFrame = CFrame.new(x,y-30,z)*CFrame.new(Random.new():NextNumber(-2,2),Random.new():NextNumber(-2,2),Random.new():NextNumber(-2,2))
+		RootPart.AssemblyLinearVelocity = Vector3.new(0,80,80)
 		game:GetService('RunService').Heartbeat:Wait()
 	until os.clock()-StartTime>=(game:GetService('Players').RespawnTime + 0.6)
 	for i,v in pairs(Character:GetDescendants())do
@@ -660,7 +660,7 @@ utility.permadeath = function()
 			utility.netless(v)
 			task.spawn(function()
 				for i = 1,30 do
-					v.Velocity = Vector3.new(0,30,0)
+					v.AssemblyLinearVelocity = Vector3.new(0,80,0)
 					task.wait(-1)
 				end
 			end)
@@ -671,7 +671,7 @@ utility.permadeath = function()
 	for i,v in pairs(hats)do
 		task.spawn(function()
 			for i = 1,150 do
-				v[1].CFrame = v[2]
+				v[1].CFrame = v[2]*CFrame.new(0,Random.new():NextNumber(-1,1),0)
 				game:GetService("RunService").Heartbeat:Wait()
 			end
 		end)
@@ -1187,10 +1187,10 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			rotator = CFrame.Angles(0,0,0)
 		end
 		if utility.getHatWithMeshId(11159370334) and utility.getHatWithMeshId(11159370334):FindFirstChildWhichIsA('BasePart')==handle then
-			rotator=CFrame.Angles(0,0,math.rad(90))
+			rotator=CFrame.Angles(math.rad(90),0,math.rad(90))
 		end
 		if utility.getHatWithMeshId(11159410305) and utility.getHatWithMeshId(11159410305):FindFirstChildWhichIsA('BasePart')==handle then
-			rotator=CFrame.Angles(0,0,math.rad(90))
+			rotator=CFrame.Angles(math.rad(90),0,math.rad(90))
 		end
 		utility.setCFrame(handle,(setCFrame*rotator))
 	end

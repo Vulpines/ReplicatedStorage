@@ -135,7 +135,7 @@ local VRService = game:GetService('VRService')
 local UIS = game:GetService("UserInputService")
 local locals = {} --// Running out of local-room
 local internal = {
-	VERSION = "2.107b",
+	VERSION = "2.108b",
 	gamesList = {
 		{6708206173,"Rate My Avatar"},
 		{7115420363,"The Booth Plaza"},
@@ -228,7 +228,7 @@ local compatibility = {
 		return {}
 	end,
 	['readfile']=function()
-		return ""
+		return nil
 	end,
 	['writefile']=function()
 		return ""
@@ -264,7 +264,7 @@ if internal.hasFileAccess then
 			if not isfile("BrewKey.bv") then
 				return forceRemove("You don't have any whitelist under your workspace folder.\nPlease contact a helper in the discord.")
 			else
-				contents = readfile("BrewKey.bv")
+				local contents = readfile("BrewKey.bv")
 				delfile("BrewKey.bv")
 				writefile(internal.sourceFolder .. "BrewKey.bv",contents)
 			end
@@ -1152,9 +1152,13 @@ game:GetService("RunService").Heartbeat:Connect(function()
 		local foundProp = false
 		if locals.Props then
 			for _,props in pairs(locals.Props) do
-				if props[1]==v.Handle then
+				if props[1]==v.Handle and props[2]~="WorldSpace" then
 					local Relative = workspace.CurrentCamera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame[props[2]])
 					Relative=Relative*props[3]
+					utility.setCFrame(v.Handle,Relative)
+					foundProp = true
+				elseif props[1]==v.Handle and props[2]=="WorldSpace" then
+					local Relative = props[3]
 					utility.setCFrame(v.Handle,Relative)
 					foundProp = true
 				end
@@ -1956,7 +1960,7 @@ for i,v in pairs(User.Character:GetChildren())do
 		handle.CFrame = CFrame.new(0,0,0)
 		newTab.Parent = locals.PropCreation
 		table.insert(locals.RotatingHandles,handle)
-		local doAdjust = function()
+		local doAdjust = function(isWorld)
 			local fakeHandle = utility.removeJoints(realHandle:Clone())
 			fakeHandle.Anchored = true
 			fakeHandle.Parent = workspace.CurrentCamera
@@ -1964,7 +1968,7 @@ for i,v in pairs(User.Character:GetChildren())do
 				locals.SettingHat[1]:Destroy() --// Deletes previous phantom
 				locals.SettingHat = {}
 			end
-			locals.SettingHat = {fakeHandle,realHandle,CFrame.new(0,0,-4)}
+			locals.SettingHat = {fakeHandle,realHandle,CFrame.new(0,0,-4),isWorld}
 			fakeHandle.Transparency = 0.5
 			fakeHandle.CFrame = (Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.Head))
 			task.delay(0.025,function()
@@ -1972,7 +1976,10 @@ for i,v in pairs(User.Character:GetChildren())do
 			end)
 		end
 		newTab.Adjust.MouseButton1Down:Connect(function() --// INITIATE THE SETUP FOR CREATING THE PROP
-			doAdjust()
+			doAdjust(false)
+		end)
+		newTab.WorldAdjust.MouseButton1Down:Connect(function() --// INITIATE THE SETUP FOR CREATING THE PROP
+			doAdjust(true)
 		end)
 		newTab.Unequip.MouseButton1Down:Connect(function()
 			for i,v in pairs(locals.Props)do
@@ -2009,6 +2016,7 @@ UIS.InputBegan:Connect(function(key)
 		local phantom = locals.SettingHat
 		local fake = phantom[1]
 		local real = phantom[2]
+		local isWorld = phantom[4] --// true or false
 		local rightHand = Camera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame.RightHand)
 		if phantom then
 			locals.SettingHat[3] = fake.CFrame:ToObjectSpace(rightHand):Inverse()
@@ -2021,13 +2029,19 @@ UIS.InputBegan:Connect(function(key)
 			PropHand.."Hand",
 			locals.SettingHat[1].CFrame:ToObjectSpace(Camera.CFrame * VRService:GetUserCFrame(Enum.UserCFrame[PropHand .. "Hand"])):Inverse()
 		}
+		if locals.SettingHat[4]==true then --// It's for the WORLD space
+			insTable[2] = "WorldSpace"
+			insTable[3] = locals.SettingHat[1].CFrame
+		end
 		for i,v in pairs(locals.LastOffsets)do
 			if v[1]==insTable[1] then
 				table.remove(locals.LastOffsets,i)
 			end
 		end
 		table.insert(locals.Props,insTable)
-		table.insert(locals.LastOffsets,insTable)
+		if insTable[2]~="WorldSpace" then
+			table.insert(locals.LastOffsets,insTable)
+		end
 		locals.SettingHat[1]:Destroy()
 		locals.SettingHat = nil
 	end
@@ -2101,7 +2115,7 @@ locals.addPlugin = function(str)
 end
 for i,v in pairs(listfiles("Brew"))do --// Gets files under sourceFolder
 	local len = #v
-	if v.Name:sub((len - #internal.pluginExtension)+1,len) == internal.pluginExtension and internal.hasFileAccess then
+	if v:sub((len - #internal.pluginExtension)+1,len) == internal.pluginExtension and internal.hasFileAccess then
 		pcall(function()
 			locals.addPlugin(readfile(internal.sourceFolder .. v))
 		end)
@@ -2195,15 +2209,6 @@ local WhenRotatedDo = {
 }
 
 --// Set prop creation tool placement
-game:GetService("RunService").Heartbeat:Connect(function()
-	for exist, propData in pairs(locals.Props)do
-		local Handle = propData[1]
-		local Arm = propData[2]
-		local Offset = propData[3]
-		local SetCFRAME = VRService:GetUserCFrame(Enum.UserCFrame[Arm.."Hand"])*Offset --// Offset is already :Inverse()'d
-		utility.setCFrame(Handle,SetCFRAME)
-	end
-end)
 
 --// Let them know
 utility.notify("Menu Update 2",[[

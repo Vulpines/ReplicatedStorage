@@ -1187,10 +1187,10 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			rotator = CFrame.Angles(0,0,0)
 		end
 		if utility.getHatWithMeshId(11159370334) and utility.getHatWithMeshId(11159370334):FindFirstChildWhichIsA('BasePart')==handle then
-			rotator=CFrame.Angles(math.rad(90),0,math.rad(90))
+			rotator=CFrame.new(-0.0144920312, 0, 0, 0, -0.999999762, 0, 0.999999762, 0, 0, 0, 0, 1)
 		end
 		if utility.getHatWithMeshId(11159410305) and utility.getHatWithMeshId(11159410305):FindFirstChildWhichIsA('BasePart')==handle then
-			rotator=CFrame.Angles(math.rad(90),0,math.rad(90))
+			rotator=CFrame.new(-0.0144920312, 0, 0, 0, -0.999999762, 0, 0.999999762, 0, 0, 0, 0, 1)
 		end
 		utility.setCFrame(handle,(setCFrame*rotator))
 	end

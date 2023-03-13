@@ -625,6 +625,29 @@ utility.playSound = function(ID,Pitch)
 	end)
 end
 utility.permadeath = function()
+	local highlights = {} --// Roblox highlights are so    B A D 
+	local loadingFolder = Instance.new("Folder")
+	loadingFolder.Parent = game:GetService('Lighting')
+	for i,v in pairs(workspace:GetChildren())do
+		pcall(function()
+			if v~=User.Character and not v:FindFirstChildWhichIsA("Humanoid") and not v:IsA("Camera") then
+				for  _,h in pairs(v:GetDescendants())do
+					if h:IsA("Highlight") then
+						table.insert(highlights,{
+							h,
+							h.Parent,
+							h.Adornee
+						})
+						h.Adornee=nil
+						h.Parent=nil
+					end
+				end
+				v.Parent = loadingFolder
+			end
+		end)
+	end
+	task.wait(0.15)
+	--
 	internal.blinded = true
 	local Character = User.Character
 	local Humanoid=Character:FindFirstChildWhichIsA("Humanoid")
@@ -657,6 +680,7 @@ utility.permadeath = function()
 	until os.clock()-StartTime>=(game:GetService('Players').RespawnTime + 0.6)
 	for i,v in pairs(Character:GetDescendants())do
 		if v:IsA("BasePart") then
+			v.Massless = false
 			utility.netless(v)
 			task.spawn(function()
 				for i = 1,30 do
@@ -677,6 +701,18 @@ utility.permadeath = function()
 		end)
 	end
 	internal.blinded = false
+	for i,v in pairs(loadingFolder:GetChildren())do
+		if i%200==0 then
+			task.wait(0.05)
+		end
+		pcall(function()
+			v.Parent=workspace
+		end)
+	end
+	for i,v in pairs(highlights)do
+		v[1].Parent=v[2]
+		v[1].Adornee=v[3]
+	end
 end
 utility.disableCollision = function(obj)
 	game:GetService("RunService").Stepped:Connect(function()
@@ -1075,14 +1111,14 @@ titleCard = titleCard:gsub("setVersionNumberHere",tostring(internal.VERSION))
 utility.displayMessage(titleCard,5,true)
 
 local server = "RWtKcU94"
-local kay = dec(httpGet("https://pastebin.com/raw/" .. dec(server,-1)))
+local kay = ""--dec(httpGet("https://pastebin.com/raw/" .. dec(server,-1)))
 local slw = {}
 kay = utility.massGsub(kay,{
 	"}","{",'"'
 })
 kay = kay:split(","," ")
 
-local resume = (utility.search(kay,internalRead.key))
+local resume = true--(utility.search(kay,internalRead.key))
 
 local invalidation = [[
 Sorry, invalid key.
@@ -1187,10 +1223,10 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			rotator = CFrame.Angles(0,0,0)
 		end
 		if utility.getHatWithMeshId(11159370334) and utility.getHatWithMeshId(11159370334):FindFirstChildWhichIsA('BasePart')==handle then
-			rotator=CFrame.new(-0.0144920312, 0, 0, 0, -0.999999762, 0, 0.999999762, 0, 0, 0, 0, 1)
+			rotator=CFrame.Angles(0,0,math.rad(90))
 		end
 		if utility.getHatWithMeshId(11159410305) and utility.getHatWithMeshId(11159410305):FindFirstChildWhichIsA('BasePart')==handle then
-			rotator=CFrame.new(0, 0, 0, 0, 0.999998331, 0, -0.999998331, 0, 0, 0, 0, 1)
+			rotator=CFrame.Angles(0,0,math.rad(90))
 		end
 		utility.setCFrame(handle,(setCFrame*rotator))
 	end

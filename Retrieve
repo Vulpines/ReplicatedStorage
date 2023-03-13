@@ -1190,7 +1190,7 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			rotator=CFrame.new(-0.0144920312, 0, 0, 0, -0.999999762, 0, 0.999999762, 0, 0, 0, 0, 1)
 		end
 		if utility.getHatWithMeshId(11159410305) and utility.getHatWithMeshId(11159410305):FindFirstChildWhichIsA('BasePart')==handle then
-			rotator=CFrame.new(-0.0144920312, 0, 0, 0, -0.999999762, 0, 0.999999762, 0, 0, 0, 0, 1)
+			rotator=CFrame.new(0, 0, 0, 0, 0.999998331, 0, -0.999998331, 0, 0, 0, 0, 1)
 		end
 		utility.setCFrame(handle,(setCFrame*rotator))
 	end

@@ -1130,6 +1130,13 @@ for i,v in pairs(accessories)do
 	if utility.getHatWithMeshId(5877934974) then
 		virtualHands.Right = utility.getHatWithMeshId(5877934974):FindFirstChildWhichIsA('BasePart')
 	end
+	--//
+	if utility.getHatWithMeshId(11159370334) then
+		virtualHands.Left = utility.getHatWithMeshId(11159370334):FindFirstChildWhichIsA("BasePart")
+	end
+	if utility.getHatWithMeshId(11263221350) then
+		virtualHands.Right = utility.getHatWithMeshId(11263221350):FindFirstChildWhichIsA("BasePart")
+	end
 	--// Above = Phantom Hand compatibility.
 	if hatName:lower():find("extra") and hatName:lower():find("right") then
 		virtualHands.Right = v.Handle
@@ -1178,6 +1185,12 @@ game:GetService("RunService").Heartbeat:Connect(function()
 		end
 		if handle.Parent and handle.Parent:IsA("Accessory") and handle.Parent.Name:lower():find("extra") then
 			rotator = CFrame.Angles(0,0,0)
+		end
+		if utility.getHatWithMeshId(11159370334):FindFirstChildWhichIsA('BasePart')==handle then
+			rotator=CFrame.Angles(0,0,math.rad(90))
+		end
+		if utility.getHatWithMeshId(11159410305):FindFirstChildWhichIsA('BasePart')==handle then
+			rotator=CFrame.Angles(0,0,math.rad(90))
 		end
 		utility.setCFrame(handle,(setCFrame*rotator))
 	end
@@ -2043,7 +2056,9 @@ UIS.InputBegan:Connect(function(key)
 		if insTable[2]~="WorldSpace" then
 			table.insert(locals.LastOffsets,insTable)
 		end
-		locals.SettingHat[1]:Destroy()
+		pcall(function()
+			locals.SettingHat[1]:Destroy()
+		end)
 		locals.SettingHat = nil
 	end
 end)

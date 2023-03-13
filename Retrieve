@@ -1172,8 +1172,10 @@ game:GetService("RunService").Heartbeat:Connect(function()
 	for ind, handle in pairs(virtualHands)do
 		inCounting=inCounting+1
 		local setCFrame = (workspace.CurrentCamera.CFrame*VRService:GetUserCFrame(Enum.UserCFrame[ind .. "Hand"])) * CFrame.Angles(math.rad(-25),0,0)
-		local rotator = CFrame.Angles(math.rad(-90 + 25),0,0) --// Phantom hand compatibility [x2]
-		rotator = rotator * CFrame.Angles(0,(math.rad(50 * ((inCounting==1 and -1)or 1))),0)
+		local rotator = CFrame.new(-3.54668123e-06, 5.52903111e-06, 3.9960014e-06, 0.825311065, 0.417320371, -0.380401909, 0.562786877, -0.66299206, 0.493672609, -0.0461838245, -0.621518493, -0.78203702)
+		if ind=="Right" then
+			rotator = CFrame.new(-8.31130183e-06, -4.80502786e-06, 1.82508893e-06, 0.815424323, -0.280380338, 0.506429076, -0.519768298, -0.739736199, 0.42735365, 0.254802227, -0.611700296, -0.748931825)
+		end
 		if handle.Parent and handle.Parent:IsA("Accessory") and handle.Parent.Name:lower():find("extra") then
 			rotator = CFrame.Angles(0,0,0)
 		end
